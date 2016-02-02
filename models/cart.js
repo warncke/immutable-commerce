@@ -9,8 +9,6 @@ var isObject = require('isobject')
 var db = require('../lib/database.js')
 var stableId = require('../lib/stable-id.js')
 
-
-
 function createCart (cartData, originalCartId, sessionId, requestTimestamp) {
     // build cart data
     var cart = {

@@ -9,6 +9,8 @@ router.get('/cart', getCart)
 router.post('/cart', createCart)
 // get specific cart by id
 router.get('/cart/:cartId', getCart)
+// update cart
+router.put('/cart/:cartId', updateCart)
 // modify product quantity - returns current cart contents
 router.post('/cart/:cartId/product/:productId', cartProduct)
 // create order for cart
@@ -42,4 +44,10 @@ function getCart (req, res, next) {
     return req.params.cartId
         ? cartController.getCartById()
         : cartController.getCartBySessionId()
+}
+
+function updateCart (req, res, next) {
+    var cartController = new CartController(req, res, next)
+
+    return cartController.updateCart()
 }

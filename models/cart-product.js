@@ -4,8 +4,6 @@
 var db = require('../lib/database')
 var stableId = require('../lib/stable-id')
 
-
-
 function createCartProduct (cartId, productId, quantity, requestTimestamp) {
     // build cart product
     var cartProduct = {
@@ -24,10 +22,10 @@ function createCartProduct (cartId, productId, quantity, requestTimestamp) {
     })
 }
 
-function getCartProductsSummaryByCartId (cartId, originalCartId, requestTimestamp) {
+function getCartProductsSummaryByCartId (cartId, requestTimestamp) {
     // select cart products
     return db('immutable').query(
-        'SELECT HEX(productId) AS productId, SUM(quantity) AS quantity FROM cartProduct WHERE cartId IN (UNHEX(:cartId), UNHEX(:originalCartId) ) AND cartProductCreateTime <= :requestTimestamp GROUP BY productId',
+        'SELECT HEX(productId) AS productId, SUM(quantity) AS quantity FROM cartProduct WHERE cartId = UNHEX(:cartId) AND cartProductCreateTime <= :requestTimestamp GROUP BY productId',
         {cartId: cartId, requestTimestamp: requestTimestamp}
     ).then(function (res) {
         var products = {}
@@ -38,6 +36,16 @@ function getCartProductsSummaryByCartId (cartId, originalCartId, requestTimestam
         }
         // return product summary data
         return products
+    })
+}
+
+function getCartProductsTotalQuantityByCartId (cartId, requestTimestamp) {
+    // select cart products
+    return db('immutable').query(
+        'SELECT SUM(quantity) AS quantity FROM cartProduct WHERE cartId = UNHEX(:cartId) AND cartProductCreateTime <= :requestTimestamp',
+        {cartId: cartId, requestTimestamp: requestTimestamp}
+    ).then(function (res) {
+        return res.info.numRows == 1 ? res[0].quantity : 0
     })
 }
 
