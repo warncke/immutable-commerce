@@ -52,4 +52,5 @@ function getCartProductsTotalQuantityByCartId (cartId, requestTimestamp) {
 module.exports = {
     createCartProduct: createCartProduct,
     getCartProductsSummaryByCartId: getCartProductsSummaryByCartId,
+    getCartProductsTotalQuantityByCartId: getCartProductsTotalQuantityByCartId,
 }

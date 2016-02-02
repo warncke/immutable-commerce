@@ -98,6 +98,11 @@ Cart.prototype.createCart = function createCart () {
         sessionId,
         requestTimestamp
     )
+    // add default properties
+    .then(function (cart) {
+        cart.products = {}
+        return cart
+    })
     // return response
     .then(function (res) {
         cartController.res.json(res)

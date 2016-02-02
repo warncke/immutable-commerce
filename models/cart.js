@@ -45,7 +45,7 @@ function getCartById (cartId, requestTimestamp) {
     }
     // select cart by id
     return db('immutable').query(
-        'SELECT HEX(cartId) AS cartId, originalCartId, HEX(sessionId) AS sessionId, cartData, cartCreateTime FROM cart WHERE cartId = UNHEX(:cartId) AND cartCreateTime <= :requestTimestamp',
+        'SELECT HEX(cartId) AS cartId, HEX(originalCartId) AS originalCartId, HEX(sessionId) AS sessionId, cartData, cartCreateTime FROM cart WHERE cartId = UNHEX(:cartId) AND cartCreateTime <= :requestTimestamp',
         {cartId: cartId, requestTimestamp: requestTimestamp}
     ).then(function (res) {
         // return cart if found
