@@ -8,6 +8,7 @@ var isObject = require('isobject')
 
 var db = require('../lib/database.js')
 var stableId = require('../lib/stable-id.js')
+var stringify = require('json-stable-stringify')
 
 function createCart (cartData, originalCartId, sessionId, requestTimestamp) {
     // build cart data
@@ -18,7 +19,7 @@ function createCart (cartData, originalCartId, sessionId, requestTimestamp) {
     }
     // store cart data if passed and valid
     if (isObject(cartData)) {
-        cart.cartData = JSON.stringify(cartData)
+        cart.cartData = stringify(cartData)
     }
     // otherwise set default value
     else {

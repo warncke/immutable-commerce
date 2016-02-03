@@ -4,8 +4,6 @@
 var db = require('../lib/database')
 var stableId = require('../lib/stable-id')
 
-
-
 function createOrder (accountId, cartId, originalOrderId, requestTimestamp) {
     // build order data
     var order = {

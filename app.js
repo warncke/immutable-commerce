@@ -16,6 +16,7 @@ var session = require('./models/session')
 var cart = require('./routes/cart')
 var index = require('./routes/index')
 var order = require('./routes/order')
+var product = require('./routes/product')
 
 /* build express app */
 var app = express()
@@ -42,6 +43,7 @@ app.use(session.auth)
 app.use('/', cart)
 app.use('/', index)
 app.use('/', order)
+app.use('/', product)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

@@ -14,8 +14,9 @@ var notFound = require('../lib/not-found')
 /* models */
 
 var cartModel = require('../models/cart')
-var orderModel = require('../models/order')
 var cartProductModel = require('../models/cart-product')
+var orderModel = require('../models/order')
+var productModel = require('../models/product')
 
 /* Cart Controller Object */
 
@@ -42,15 +43,19 @@ Cart.prototype.cartProduct = function cartProduct () {
     var cartPromise = cartModel.getCartById(cartId, requestTimestamp)
     // load order
     var orderPromise = orderModel.getOrderByCartId(cartId, requestTimestamp)
+    // load product
+    var productIdPromise = productModel.getProductId(productId, requestTimestamp)
     // wait for data to load
     return Promise.all([
         cartPromise,
-        orderPromise
+        orderPromise,
+        productIdPromise
     ])
     // create product quantity modification for cart if it does not have order
     .then(function (res) {
         var cart = res[0]
         var order = res[1]
+        var productId = res[2]
         // cart id was not found
         if (!cart) {
             return Promise.reject(notFound())
@@ -58,6 +63,10 @@ Cart.prototype.cartProduct = function cartProduct () {
         // cart does not belong to current session
         if (cart.sessionId !== sessionId && cart.sessionId !== originalSessionId) {
             return Promise.reject(accessDenied())
+        }
+        // product id not found
+        if (!productId) {
+            return Promise.reject(badRequest('productId not found'))
         }
         // product modifications on carts with orders not allowed
         if (order) {

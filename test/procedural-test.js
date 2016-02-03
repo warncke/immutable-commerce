@@ -1,13 +1,22 @@
 'use strict'
 
+/* application libraries */
+
 var _ = require('lodash')
 var commandLineArgs = require("command-line-args")
 var crypto = require('crypto')
 var deepEqual = require('deep-equal')
 var fs = require('fs')
 var request = require('request')
+var moment = require('moment')
 var rp = require('request-promise')
 var seedrandom = require('seedrandom')
+
+/* models */
+
+var productModel = require('../models/product')
+
+/* CLI setup */
 
 var cli = commandLineArgs([
     { name: "avgDelay", type: Number, defaultValue: 1000 },
@@ -26,6 +35,9 @@ if (options.help) {
     printHelp()
     process.exit()
 }
+
+// get time for model queries
+var requestTimestamp = moment().format('YYYY-MM-DD HH:mm:ss.SSSSSS')
 
 // start random number generator at same place every time
 var rng = seedrandom(1);
@@ -54,15 +66,18 @@ var runStartTime = new Date().getTime()
 
 /* test data */
 
-// generate product ids to add and remove from carts
-var products = generateProductIds()
+// global product source
+var products = [];
 
-// print statistics periodically
-setTimeout(printStatus, 1000)
+// load product ids
+generateProductIds().then(function () {
+    // print statistics periodically
+    setTimeout(printStatus, 1000)
 
-// start execution of tests - this function will set a timeout
-// that recalls it until all tests are complete
-startTests()
+    // start execution of tests - this function will set a timeout
+    // that recalls it until all tests are complete
+    startTests()
+});
 
 /* program functions */
 
@@ -229,7 +244,6 @@ function printHelp () {
     console.log("\t--number\t[100000]\t\ttotal number of tests to run")
     console.log("\t--numProducts\t[100]\t\tnumber of products to choose from")
     console.log("\n")
-
 }
 
 function printStatus () {
@@ -266,16 +280,12 @@ function printStatus () {
 /* data generation functions */
 
 function generateProductIds () {
-    var products = []
-
-    for (var i=0; i < options.numProducts; i++) {
-        // generate 128 bit hex hash as product id
-        var productId = crypto.createHash('sha256').update(i.toString()).digest("hex").toUpperCase()
-
-        products.push(productId)
-    }
-
-    return products
+    return productModel.getProducts(requestTimestamp).then(function (res) {
+        // add product ids to global list for use in tests
+        for (var i=0; i < res.length; i++) {
+            products.push(res[i].productId)
+        }
+    })
 }
 
 function getRandom (min, max) {
