@@ -9,6 +9,7 @@ var _ = require('lodash')
 var accessDenied = require('../lib/access-denied')
 var badRequest = require('../lib/bad-request')
 var isDuplicate = require('../lib/is-duplicate')
+var immutable = require('../lib/immutable')
 var notFound = require('../lib/not-found')
 
 /* models */
@@ -72,8 +73,8 @@ Cart.prototype.cartProduct = function cartProduct () {
         if (order) {
             return Promise.reject(badRequest('Product modification not allowed on cart with order'))
         }
-        // if cart is a modification then link all changes to the original cart so that products
-        // do not get spread out between modifications and lost
+        // if cart is a modification then link all changes to the original cart
+        // so that products do not get spread out between modifications and lost
         var productCartId = cart.originalCartId || cart.cartId
         // insert cart product modification
         return cartProductModel.createCartProduct(
@@ -81,7 +82,16 @@ Cart.prototype.cartProduct = function cartProduct () {
             productId,
             quantity,
             requestTimestamp
-        )        
+        )
+        // execute any event handlers
+        .then(function (cartProduct) {
+            return immutable.trigger('afterCreateCartProduct', {
+                cart: cart,
+                cartProduct: cartProduct,
+                requestTimestamp: requestTimestamp,
+                session: cartController.req.session,
+            })
+        })
     })
     // return refreshed cart on success
     .then(function (res) {
@@ -244,6 +254,14 @@ Cart.prototype.getCartById = function getCartById (cartId) {
             cart.products = products
 
             return cart
+        })
+    })
+    // execute any event handlers
+    .then(function (cart) {
+        return immutable.trigger('afterGetCartById', {
+            cart: cart,
+            requestTimestamp: requestTimestamp,
+            session: cartController.req.session,
         })
     })
     // return response

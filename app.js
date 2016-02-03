@@ -18,6 +18,9 @@ var index = require('./routes/index')
 var order = require('./routes/order')
 var product = require('./routes/product')
 
+/* load extensions */
+require('require-all')(__dirname + '/extensions');
+
 /* build express app */
 var app = express()
 

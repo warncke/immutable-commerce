@@ -22,6 +22,20 @@ function createCartProduct (cartId, productId, quantity, requestTimestamp) {
     })
 }
 
+function getCartProductsByCartId (cartId, requestTimestamp) {
+    // select cart products
+    return db('immutable').query(
+        'SELECT HEX(p.productId) AS productId, HEX(p.productDataId) AS productDataId, HEX(p.originalProductId) AS originalProductId, SUM(cp.quantity) as quantity, cp.cartProductCreateTime, p.productData, p.productCreateTime FROM cartProduct cp JOIN product p ON cp.productId = p.productId WHERE cp.cartId = UNHEX(:cartId) AND cp.cartProductCreateTime <= :requestTimestamp GROUP BY p.productId',
+        {cartId: cartId, requestTimestamp: requestTimestamp}
+    ).then(function (res) {
+        for (var i=0; i < res.length; i++) {
+            // convert product data to JSON
+            res[i].productData = JSON.parse(res[i].productData)
+        }
+        return res
+    });
+}
+
 function getCartProductsSummaryByCartId (cartId, requestTimestamp) {
     // select cart products
     return db('immutable').query(
@@ -51,6 +65,7 @@ function getCartProductsTotalQuantityByCartId (cartId, requestTimestamp) {
 
 module.exports = {
     createCartProduct: createCartProduct,
+    getCartProductsByCartId: getCartProductsByCartId,
     getCartProductsSummaryByCartId: getCartProductsSummaryByCartId,
     getCartProductsTotalQuantityByCartId: getCartProductsTotalQuantityByCartId,
 }
