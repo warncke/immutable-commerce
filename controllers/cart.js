@@ -178,10 +178,17 @@ Cart.prototype.createOrder = function createOrder () {
     .then(function (cart) {
         // cart is a modification of another cart
         if (cart.originalCartId) {
-            // if the original cart has order then link that to new order
-            return orderModel.getOrderByCartId(cart.originalCartId, requestTimestamp).then(function (order) {
-                // create order for cart
-                return orderModel.createOrder(accountId, cartId, order.orderId, requestTimestamp)
+            // attempt to load order for original cart
+            return orderModel.getOrderByCartId(cart.originalCartId, requestTimestamp)
+            .then(function (order) {
+                // if the original cart has order then link that to new order
+                if (order) {
+                    return orderModel.createOrder(accountId, cartId, order.orderId, requestTimestamp)
+                }
+                // otherwise just create order
+                else {
+                    return orderModel.createOrder(accountId, cartId, undefined, requestTimestamp)
+                }
             })
         }
         // cart has no previous instances
