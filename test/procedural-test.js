@@ -22,10 +22,9 @@ var cli = commandLineArgs([
     { name: "avgDelay", type: Number, defaultValue: 1000 },
     { name: "avgMod", type: Number, defaultValue: 15 },
     { name: "baseUrl", type: String, defaultValue: "http://marketplace.dev:3000" },
-    { name: "concurrent", alias: "c", type: Number, defaultValue: 500 },
+    { name: "concurrent", alias: "c", type: Number, defaultValue: 200 },
     { name: "help", type: Boolean, defaultValue: false },
-    { name: "number", alias: "n", type: Number, defaultValue: 5000 },
-    { name: "numProducts", type: Number, defaultValue: 100 },
+    { name: "number", alias: "n", type: Number, defaultValue: 1000 },
 ])
 
 var options = cli.parse()
@@ -82,7 +81,7 @@ generateProductIds().then(function () {
 /* program functions */
 
 function finish () {
-
+    process.exit()
 }
 
 function modifyCartProducts (cartId, cookieJar) {
@@ -237,12 +236,11 @@ function startTests() {
 
 function printHelp () {
     console.log("\nUsage: node test/procedural-test.js [options]\n")
-    console.log("\t--avgDelay\t[5000]\t\taverage time between requests (ms)")
+    console.log("\t--avgDelay\t[1000]\t\taverage time between requests (ms)")
     console.log("\t--avgMod\t[15]\t\taverage product modifications (add+remove)")
     console.log("\t--baseUrl\t[http://marketplace.dev:3000]")
-    console.log("\t--concurrent\t[10000]\t\tnumber of tests to run concurrently")
-    console.log("\t--number\t[100000]\t\ttotal number of tests to run")
-    console.log("\t--numProducts\t[100]\t\tnumber of products to choose from")
+    console.log("\t--concurrent\t[200]\t\tnumber of tests to run concurrently")
+    console.log("\t--number\t[1000]\t\ttotal number of tests to run")
     console.log("\n")
 }
 
@@ -254,7 +252,7 @@ function printStatus () {
 
     // calculate rps for last iteration only
     if (lastCount && lastTime) {
-        message += '; ' + parseInt(successCount - lastCount / ((curTime - lastTime) / 1000)) + ' current rps'
+        message += '; ' + parseInt((successCount - lastCount) / ((curTime - lastTime) / 1000)) + ' current rps'
     }
     // calculate avg request time
     if (timeCount > 0) {
