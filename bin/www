@@ -7,6 +7,7 @@
 var app = require('../app');
 var debug = require('debug')('shopping-service:server');
 var http = require('http');
+var instance = require('../lib/instance')
 
 /**
  * Get port from environment and store in Express.
@@ -28,6 +29,15 @@ var server = http.createServer(app);
 server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);
+
+/**
+ * Initialize new instance
+ */
+instance({
+  ipAddress: server.address().address,
+  ipVersion: server.address().family,
+  port: server.address().port,
+})
 
 /**
  * Normalize a port into a number, string, or false.

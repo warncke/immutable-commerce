@@ -1,9 +1,14 @@
 'use strict'
 
+/* npm libraries */
 var express = require('express')
 var router = express.Router()
 
-var CartController = require('../controllers/cart')
+/* application libraries */
+var cartController = require('../controllers/cart')
+var immutable = require('../lib/immutable')
+
+/* routes */
 
 // get most recent active cart for session or create new cart
 router.get('/cart', getCart)
@@ -23,33 +28,38 @@ module.exports = router
 /* route handlers */
 
 function cartProduct (req, res, next) {
-    var cartController = new CartController(req, res, next)
-
-    return cartController.cartProduct()
+    // set next callback for current context
+    req.session.next = next
+    // call controller function
+    return cartController.cartProduct(req.session)
 }
 
 function createCart (req, res, next) {
-    var cartController = new CartController(req, res, next)
-
-    return cartController.createCart()
+    // set next callback for current context
+    req.session.next = next
+    // call controller function
+    return cartController.createCart(req.session)
 }
 
 function createOrder (req, res, next) {
-    var cartController = new CartController(req, res, next)
-
-    return cartController.createOrder()
+    // set next callback for current context
+    req.session.next = next
+    // call controller function
+    return cartController.createOrder(req.session)
 }
 
 function getCart (req, res, next) {
-    var cartController = new CartController(req, res, next)
-
+    // set next callback for current context
+    req.session.next = next
+    // call controller function
     return req.params.cartId
-        ? cartController.getCartById()
-        : cartController.getCartBySessionId()
+        ? cartController.getCartById(req.session)
+        : cartController.getCartBySessionId(req.session)
 }
 
 function updateCart (req, res, next) {
-    var cartController = new CartController(req, res, next)
-
-    return cartController.updateCart()
+    // set next callback for current context
+    req.session.next = next
+    // call controller function
+    return cartController.updateCart(req.session)
 }

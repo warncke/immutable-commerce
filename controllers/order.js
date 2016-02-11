@@ -2,31 +2,38 @@
 
 /* npm libraries */
 
-/* helper functions */
-
+/* application libraries */
 var accessDenied = require('../lib/access-denied')
 var badRequest = require('../lib/bad-request')
+var immutable = require('../lib/immutable')
 var isDuplicate = require('../lib/is-duplicate')
 var notFound = require('../lib/not-found')
-
-/* models */
-
 var orderModel = require('../models/order')
 
-/* Order Controller Object */
+/* public functions */
+var orderController = module.exports = immutable.controller('Order', {
+    getOrder: getOrder,
+    getOrders: getOrders,
+})
 
-function Order(req, res, next) {
-    this.req = req
-    this.res = res
-    this.next = next
+/**
+ * @function getOrder
+ *
+ * @param {object} session - request session
+ * 
+ * @returns {Promise}
+ */
+function getOrder (session) {
+
 }
 
-Order.prototype.getOrder = function getOrder () {
-
-}
-
-Order.prototype.getOrders = function getOrders () {
+/**
+ * @function getOrders
+ *
+ * @param {object} session - request session
+ * 
+ * @returns {Promise}
+ */
+function getOrders (session) {
     
 }
-
-module.exports = Order

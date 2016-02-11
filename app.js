@@ -10,7 +10,10 @@ var moment = require('moment')
 var path = require('path')
 
 /* application modules */
-var session = require('./models/session')
+var instance = require('./lib/instance')
+var requestLogger = require('./lib/request-logger')
+var responseLogger = require('./lib/response-logger')
+var session = require('./lib/session')
 
 /* routes */
 var cart = require('./routes/cart')
@@ -41,6 +44,10 @@ app.use(function (req, res, next) {
 
 // perform authentication and session management
 app.use(session.auth)
+
+// do internal logging of requests
+app.use(requestLogger)
+app.use(responseLogger)
 
 // set route handlers
 app.use('/', cart)

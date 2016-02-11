@@ -7,19 +7,36 @@ var isObject = require('isobject')
 /* application libraries */
 
 var db = require('../lib/database.js')
+var immutable = require('../lib/immutable')
 var stableId = require('../lib/stable-id.js')
 var stringify = require('json-stable-stringify')
 
-function createCart (cartData, originalCartId, sessionId, requestTimestamp) {
+/* public functions */
+module.exports = immutable.model('Cart', {
+    createCart: createCart,
+    getCartById: getCartById, 
+    getMostRecentCartBySessionId: getMostRecentCartBySessionId,
+})
+
+/**
+ * @function createCart
+ *
+ * @param {object} cartData - data to store with cart
+ * @param {string} originalCartId - hex id of original cart
+ * @param {object} session - request session
+ * 
+ * @returns {Promise}
+ */
+function createCart (args) {
     // build cart data
     var cart = {
-        originalCartId: originalCartId,
-        sessionId: sessionId,
-        cartCreateTime: requestTimestamp,
+        originalCartId: args.originalCartId,
+        sessionId: args.session.data.sessionId,
+        cartCreateTime: args.session.req.requestTimestamp,
     }
     // store cart data if passed and valid
-    if (isObject(cartData)) {
-        cart.cartData = stringify(cartData)
+    if (isObject(args.cartData)) {
+        cart.cartData = stringify(args.cartData)
     }
     // otherwise set default value
     else {
@@ -31,7 +48,7 @@ function createCart (cartData, originalCartId, sessionId, requestTimestamp) {
     return db('immutable').query(
         'INSERT INTO cart VALUES(UNHEX(:cartId), UNHEX(:originalCartId), UNHEX(:sessionId), :cartCreateTime, :cartData)',
         cart
-    ).then(function (res) {
+    ).then(function () {
         // deserialize cartData
         cart = unpackCartData(cart)
 
@@ -39,32 +56,52 @@ function createCart (cartData, originalCartId, sessionId, requestTimestamp) {
     })
 }
 
-function getCartById (cartId, requestTimestamp) {
-    // require cart id
-    if (!cartId) {
-        return Promise.resolve()
-    }
+/**
+ * @function getCartById
+ *
+ * @param {string} cartId - hex id of parent cart
+ * @param {object} session - request session
+ * 
+ * @returns {Promise}
+ */
+function getCartById (args) {
     // select cart by id
     return db('immutable').query(
         'SELECT HEX(cartId) AS cartId, HEX(originalCartId) AS originalCartId, HEX(sessionId) AS sessionId, cartData, cartCreateTime FROM cart WHERE cartId = UNHEX(:cartId) AND cartCreateTime <= :requestTimestamp',
-        {cartId: cartId, requestTimestamp: requestTimestamp}
+        {
+            cartId: args.cartId,
+            requestTimestamp: args.session.req.requestTimestamp
+        }
     ).then(function (res) {
         // return cart if found
-        return res.info.numRows == 1 ? unpackCartData(res[0]) : undefined
+        return res.info.numRows === '1' ? unpackCartData(res[0]) : undefined
     })
 
 }
 
-function getMostRecentCartBySessionId (originalSessionId, sessionId, requestTimestamp) {
+/**
+ * @function getMostRecentCartBySessionId
+ *
+ * @param {object} session - request session
+ * 
+ * @returns {Promise}
+ */
+function getMostRecentCartBySessionId (args) {
     return db('immutable').query(
         // select the most recent cart associated with the session
         'SELECT HEX(cartId) AS cartId, originalCartId, HEX(sessionId) AS sessionId, cartData, cartCreateTime FROM cart c WHERE c.sessionId IN( UNHEX(:originalSessionId), UNHEX(:sessionId) ) AND cartCreateTime <= :requestTimestamp ORDER BY cartCreateTime DESC LIMIT 1',
-        {originalSessionId: originalSessionId, sessionId: sessionId, requestTimestamp: requestTimestamp}
+        {
+            originalSessionId: args.session.data.originalSessionId,
+            requestTimestamp: args.session.req.requestTimestamp,
+            sessionId: args.session.data.sessionId,
+        }
     ).then(function (res) {
         // return cart if found
-        return res.info.numRows == 1 ? unpackCartData(res[0]) : undefined
+        return res.info.numRows === '1' ? unpackCartData(res[0]) : undefined
     })
 }
+
+/* private functions */
 
 function unpackCartData (cart) {
     // do nothing if undefined
@@ -80,10 +117,4 @@ function unpackCartData (cart) {
     }
 
     return cart
-}
-
-module.exports = {
-    createCart: createCart,
-    getCartById: getCartById, 
-    getMostRecentCartBySessionId: getMostRecentCartBySessionId,
 }

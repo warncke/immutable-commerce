@@ -1,0 +1,7 @@
+* {font-family: monospace}
+a {color: black}
+th {
+    font-weight: bold;
+    text-align: center;
+}
+tr:nth-child(even) {background: #d6f1ff}

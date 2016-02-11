@@ -2,31 +2,60 @@
 
 /* application libraries */
 var db = require('../lib/database')
-var stableId = require('../lib/stable-id')
+var immutable = require('../lib/immutable')
 
-function createCartProduct (cartId, productId, quantity, requestTimestamp) {
+/* public functions */
+module.exports = immutable.model('CartProduct', {
+    createCartProduct: createCartProduct,
+    getCartProductsByCartId: getCartProductsByCartId,
+    getCartProductsSummaryByCartId: getCartProductsSummaryByCartId,
+    getCartProductsTotalQuantityByCartId: getCartProductsTotalQuantityByCartId,
+})
+
+/**
+ * @function createCartProduct
+ *
+ * @param {string} cartId - hex id of parent cart
+ * @param {string} productId - hex id of product being modified
+ * @param {integer} quantity - quantity of modification (positive or negative)
+ * @param {object} session - request session
+ * 
+ * @returns {Promise}
+ */
+function createCartProduct (args) {
     // build cart product
     var cartProduct = {
-        cartId: cartId,
-        productId: productId,
-        quantity: quantity,
-        cartProductCreateTime: requestTimestamp
+        cartId: args.cartId,
+        productId: args.productId,
+        quantity: args.quantity,
+        cartProductCreateTime: args.session.req.requestTimestamp
     }
     // insert part product
     return db('immutable').query(
         'INSERT INTO cartProduct VALUES(UNHEX(:cartId), UNHEX(:productId), :quantity, :cartProductCreateTime)',
         cartProduct
-    ).then(function (res) {
+    ).then(function () {
         // if no error on insert return data
         return cartProduct
     })
 }
 
-function getCartProductsByCartId (cartId, requestTimestamp) {
+/**
+ * @function getCartProductsByCartId
+ *
+ * @param {string} cartId - hex id of parent cart
+ * @param {object} session - request session
+ * 
+ * @returns {Promise}
+ */
+function getCartProductsByCartId (args) {
     // select cart products
     return db('immutable').query(
         'SELECT HEX(p.productId) AS productId, HEX(p.productDataId) AS productDataId, HEX(p.originalProductId) AS originalProductId, SUM(cp.quantity) as quantity, cp.cartProductCreateTime, p.productData, p.productCreateTime FROM cartProduct cp JOIN product p ON cp.productId = p.productId WHERE cp.cartId = UNHEX(:cartId) AND cp.cartProductCreateTime <= :requestTimestamp GROUP BY p.productId',
-        {cartId: cartId, requestTimestamp: requestTimestamp}
+        {
+            cartId: args.cartId,
+            requestTimestamp: args.session.req.requestTimestamp
+        }
     ).then(function (res) {
         for (var i=0; i < res.length; i++) {
             // convert product data to JSON
@@ -36,11 +65,22 @@ function getCartProductsByCartId (cartId, requestTimestamp) {
     });
 }
 
-function getCartProductsSummaryByCartId (cartId, requestTimestamp) {
+/**
+ * @function getCartProductsSummaryByCartId
+ *
+ * @param {string} cartId - hex id of parent cart
+ * @param {object} session - request session
+ * 
+ * @returns {Promise}
+ */
+function getCartProductsSummaryByCartId (args) {
     // select cart products
     return db('immutable').query(
         'SELECT HEX(productId) AS productId, SUM(quantity) AS quantity FROM cartProduct WHERE cartId = UNHEX(:cartId) AND cartProductCreateTime <= :requestTimestamp GROUP BY productId',
-        {cartId: cartId, requestTimestamp: requestTimestamp}
+        {
+            cartId: args.cartId,
+            requestTimestamp: args.session.req.requestTimestamp
+        }
     ).then(function (res) {
         var products = {}
         // build product quantity data
@@ -53,19 +93,23 @@ function getCartProductsSummaryByCartId (cartId, requestTimestamp) {
     })
 }
 
-function getCartProductsTotalQuantityByCartId (cartId, requestTimestamp) {
+/**
+ * @function getCartProductsTotalQuantityByCartId
+ *
+ * @param {string} cartId - hex id of parent cart
+ * @param {object} session - request session
+ * 
+ * @returns {Promise}
+ */
+function getCartProductsTotalQuantityByCartId (args) {
     // select cart products
     return db('immutable').query(
         'SELECT SUM(quantity) AS quantity FROM cartProduct WHERE cartId = UNHEX(:cartId) AND cartProductCreateTime <= :requestTimestamp',
-        {cartId: cartId, requestTimestamp: requestTimestamp}
+        {
+            cartId: args.cartId,
+            requestTimestamp: args.session.req.requestTimestamp
+        }
     ).then(function (res) {
-        return res.info.numRows == 1 ? res[0].quantity : 0
+        return res.info.numRows === '1' ? parseInt(res[0].quantity) : 0
     })
-}
-
-module.exports = {
-    createCartProduct: createCartProduct,
-    getCartProductsByCartId: getCartProductsByCartId,
-    getCartProductsSummaryByCartId: getCartProductsSummaryByCartId,
-    getCartProductsTotalQuantityByCartId: getCartProductsTotalQuantityByCartId,
 }

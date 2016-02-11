@@ -1,39 +1,33 @@
 'use strict'
 
-/* helper functions */
-
-var accessDenied = require('../lib/access-denied')
-var badRequest = require('../lib/bad-request')
-var isDuplicate = require('../lib/is-duplicate')
-var notFound = require('../lib/not-found')
-
-/* models */
-
+/* application libraries */
+var immutable = require('../lib/immutable')
 var productModel = require('../models/product')
 
-/* Product Controller Object */
+/* public functions */
+var productController = module.exports = immutable.controller('Product', {
+    getProducts: getProducts,
+})
 
-function Product(req, res, next) {
-    this.req = req
-    this.res = res
-    this.next = next
-}
-
-Product.prototype.getProducts = function getProducts () {
-    var productController = this
-    // get input
-    var requestTimestamp = productController.req.requestTimestamp
+/**
+ * @function getProducts
+ *
+ * @param {object} session - request session
+ * 
+ * @returns {Promise}
+ */
+function getProducts (session) {
     // get products
-    productModel.getProducts(requestTimestamp)
+    productModel.getProducts({
+        session: session,
+    })
     // return response
     .then(function (res) {
-        productController.res.json(res)
-        productController.res.end()
+        session.res.json(res)
+        session.res.end()
     })
     // catch errors
     .catch(function (err) {
-        productController.next(err)
+        session.next(err)
     })
 }
-
-module.exports = Product

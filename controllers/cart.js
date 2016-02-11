@@ -2,50 +2,60 @@
 
 /* npm libraries */
 
-var _ = require('lodash')
-
-/* helper functions */
-
+/* application libraries */
 var accessDenied = require('../lib/access-denied')
 var badRequest = require('../lib/bad-request')
-var isDuplicate = require('../lib/is-duplicate')
-var immutable = require('../lib/immutable')
-var notFound = require('../lib/not-found')
-
-/* models */
-
 var cartModel = require('../models/cart')
 var cartProductModel = require('../models/cart-product')
+var immutable = require('../lib/immutable')
+var isDuplicate = require('../lib/is-duplicate')
+var notFound = require('../lib/not-found')
 var orderModel = require('../models/order')
 var productModel = require('../models/product')
 
-/* Cart Controller Object */
+/* public functions */
+var cartController = module.exports = immutable.controller('Cart', {
+    cartProduct: cartProduct,
+    createCart: createCart,
+    createOrder: createOrder,
+    getCartById: getCartById,
+    getCartBySessionId: getCartBySessionId,
+    updateCart: updateCart,
+})
 
-function Cart(req, res, next) {
-    this.req = req
-    this.res = res
-    this.next = next
-}
-
-Cart.prototype.cartProduct = function cartProduct () {
-    var cartController = this
+/**
+ * @function cartProduct
+ *
+ * @param {object} session - request session
+ * 
+ * @returns {Promise}
+ */
+function cartProduct (session) {
     // get input
-    var cartId = cartController.req.params.cartId
-    var originalSessionId = cartController.req.session.data.originalSessionId
-    var productId = cartController.req.params.productId
-    var quantity = parseInt(cartController.req.body.quantity)
-    var requestTimestamp = cartController.req.requestTimestamp
-    var sessionId = cartController.req.session.data.sessionId
+    var cartId = session.req.params.cartId
+    var originalSessionId = session.data.originalSessionId
+    var productId = session.req.params.productId
+    var quantity = parseInt(session.req.body.quantity)
+    var sessionId = session.data.sessionId
     // require number for quantity
     if (typeof quantity !== 'number') {
-        return cartController.next(badRequest('Invalid quantity - integer required'))
+        return session.next(badRequest('Invalid quantity - integer required'))
     }
     // load cart
-    var cartPromise = cartModel.getCartById(cartId, requestTimestamp)
+    var cartPromise = cartModel.getCartById({
+        cartId: cartId,
+        session: session,
+    })
     // load order
-    var orderPromise = orderModel.getOrderByCartId(cartId, requestTimestamp)
+    var orderPromise = orderModel.getOrderByCartId({
+        cartId: cartId,
+        session: session,
+    })
     // load product
-    var productIdPromise = productModel.getProductId(productId, requestTimestamp)
+    var productIdPromise = productModel.getProductId({
+        productId: productId,
+        session: session,
+    })
     // wait for data to load
     return Promise.all([
         cartPromise,
@@ -77,46 +87,40 @@ Cart.prototype.cartProduct = function cartProduct () {
         // so that products do not get spread out between modifications and lost
         var productCartId = cart.originalCartId || cart.cartId
         // insert cart product modification
-        return cartProductModel.createCartProduct(
-            productCartId,
-            productId,
-            quantity,
-            requestTimestamp
-        )
-        // execute any event handlers
-        .then(function (cartProduct) {
-            return immutable.trigger('afterCreateCartProduct', {
-                cart: cart,
-                cartProduct: cartProduct,
-                requestTimestamp: requestTimestamp,
-                session: cartController.req.session,
-            })
+        return cartProductModel.createCartProduct({
+            cartId: productCartId,
+            productId: productId,
+            quantity: quantity,
+            session: session,
         })
     })
     // return refreshed cart on success
-    .then(function (res) {
-        return cartController.getCartById()
+    .then(function () {
+        return cartController.getCartById(session)
     })
     // catch errors
     .catch(function (err) {
-        cartController.next(err)
+        session.next(err)
     })
 }
 
-Cart.prototype.createCart = function createCart () {
-    var cartController = this
+/**
+ * @function createCart
+ *
+ * @param {object} session - request session
+ * 
+ * @returns {Promise}
+ */
+function createCart (session) {
     // get input
-    var cartData = cartController.req.body.cartData
-    var originalCartId = undefined
-    var requestTimestamp = cartController.req.requestTimestamp
-    var sessionId = cartController.req.session.data.sessionId
+    var cartData = session.req.body.cartData
+    var originalCartId;
     // create cart
-    return cartModel.createCart(
-        cartData,
-        originalCartId,
-        sessionId,
-        requestTimestamp
-    )
+    return cartModel.createCart({
+        cartData: cartData,
+        originalCartId: originalCartId,
+        session: session,
+    })
     // add default properties
     .then(function (cart) {
         cart.products = {}
@@ -124,117 +128,142 @@ Cart.prototype.createCart = function createCart () {
     })
     // return response
     .then(function (res) {
-        cartController.res.json(res)
-        cartController.res.end()
+        session.res.json(res)
+        session.res.end()
     })
     // catch errors
     .catch(function (err) {
-        cartController.next(err)
+        session.next(err)
     })
 }
 
-Cart.prototype.createOrder = function createOrder () {
-    var cartController = this
+/**
+ * @function createOrder
+ *
+ * @param {object} session - request session
+ * 
+ * @returns {Promise}
+ */
+function createOrder (session) {
     // get input
-    var accountId = cartController.req.session.data.accountId
-    var cartId = cartController.req.params.cartId
-    var requestTimestamp = cartController.req.requestTimestamp
-    var sessionId = cartController.req.session.data.sessionId
+    var accountId = session.data.accountId
+    var cartId = session.req.params.cartId
+    var sessionId = session.data.sessionId
+    // variables to populate in promises
+    var cart
+    var originalOrderId
     // require account to create order
     if (!accountId) {
-        cartController.next(accessDenied('account required to create order'))
+        session.next(accessDenied('account required to create order'))
     }
     // load cart
-    return cartModel.getCartById(cartId, requestTimestamp).then(function (cart) {
+    return cartModel.getCartById({
+        cartId: cartId,
+        session: session,
+    })
+    // validate access
+    .then(function (resCart) {
         // cart id was not found
-        if (!cart) {
+        if (!resCart) {
             return Promise.reject(notFound())
         }
         // cart does not belong to current session
-        if (cart.sessionId !== sessionId) {
+        if (resCart.sessionId !== sessionId) {
             return Promise.reject(accessDenied())
         }
-
-        return cart
+        // set cart in outer context for other promise handlers
+        cart = resCart
     })
     // load cart products
-    .then(function (cart) {
+    .then(function () {
         // always use original cart id if set
         var productCartId = cart.originalCartId || cart.cartId
         // get sum of quantity for all products in cart
-        return cartProductModel.getCartProductsTotalQuantityByCartId(
-            productCartId,
-            requestTimestamp
-        ).then(function (quantity) {
-            // require products in cart
-            if (!(quantity > 0)) {
-                return Promise.reject(badRequest('Cannot create order with no products'))
-            }
-            // pass cart to next step
-            return cart
+        return cartProductModel.getCartProductsTotalQuantityByCartId({
+            cartId: productCartId,
+            session: session,
         })
     })
-    // create order for cart if found
-    .then(function (cart) {
-        // cart is a modification of another cart
-        if (cart.originalCartId) {
-            // attempt to load order for original cart
-            return orderModel.getOrderByCartId(cart.originalCartId, requestTimestamp)
-            .then(function (order) {
-                // if the original cart has order then link that to new order
-                if (order) {
-                    return orderModel.createOrder(accountId, cartId, order.orderId, requestTimestamp)
-                }
-                // otherwise just create order
-                else {
-                    return orderModel.createOrder(accountId, cartId, undefined, requestTimestamp)
-                }
-            })
+    // require quantity greater than zero
+    .then(function (quantity) {
+        if (quantity <= 0) {
+            return Promise.reject(badRequest('Cannot create order with no products'))
         }
-        // cart has no previous instances
-        else {
-            // create order for cart
-            return orderModel.createOrder(accountId, cartId, undefined, requestTimestamp)
+    })
+    // load order for original cart
+    .then(function () {
+        // skip unless cart is a modification of another cart
+        if (!cart.originalCartId) {
+            return
         }
+        // load order for original cart
+        return orderModel.getOrderByCartId({
+            cartId: cart.originalCartId,
+            session: session,
+        })
+    })
+    // get original order id if any
+    .then(function (order) {
+        // if the original cart has order then link that to new order
+        originalOrderId = order ? order.orderId : undefined
+    })
+    // create order
+    .then(function () {
+        return orderModel.createOrder({
+            accountId: accountId,
+            cartId: cartId,
+            session: session,
+        })
     })
     // return response
     .then(function (res) {
-        cartController.res.json(res)
-        cartController.res.end()
+        session.res.json(res)
+        session.res.end()
     })
     // catch errors
     .catch(function (err) {
         if (isDuplicate(err)) {
-            cartController.next(badRequest('cannot create multiple orders for cart'))
+            session.next(badRequest('cannot create multiple orders for cart'))
         }
         else {
-            cartController.next(err)
+            session.next(err)
         }
     })
 }
 
-Cart.prototype.getCartById = function getCartById (cartId) {
-    var cartController = this
+/**
+ * @function getCartById
+ *
+ * @param {object} session - request session
+ * 
+ * @returns {Promise}
+ */
+function getCartById (session) {
     // get input
-    if (!cartId) {
-        cartId = cartController.req.params.cartId
-    }
-    var originalSessionId = cartController.req.session.data.originalSessionId
-    var requestTimestamp = cartController.req.requestTimestamp
-    var sessionId = cartController.req.session.data.sessionId
+    var cartId = session.req.params.cartId
+    var originalSessionId = session.data.originalSessionId
+    var sessionId = session.data.sessionId
+    // variables to populate in promises
+    var cart
     // load cart
-    var cartPromise = cartModel.getCartById(cartId, requestTimestamp)
+    var cartPromise = cartModel.getCartById({
+        cartId: cartId,
+        session: session,
+    })
     // load order
-    var orderPromise = orderModel.getOrderByCartId(cartId, requestTimestamp)
+    var orderPromise = orderModel.getOrderByCartId({
+        cartId: cartId,
+        session: session,
+    })
     // wait for all data to load
     return Promise.all([
         cartPromise,
         orderPromise
     ])
     // build cart
-    .then(function (args) {
-        var cart = args[0]
-        var order = args[1]
+    .then(function (res) {
+        cart = res[0]
+        var order = res[1]
         // cart id was not found
         if (!cart) {
             return Promise.reject(notFound())
@@ -245,81 +274,91 @@ Cart.prototype.getCartById = function getCartById (cartId) {
         }
         // add associated order to cart
         cart.order = order
-
-        return cart
     })
     // load products
-    .then(function (cart) {
+    .then(function () {
         // always use original cart id
         var productCartId = cart.originalCartId || cart.cartId
         // load cart products
-        return cartProductModel.getCartProductsSummaryByCartId(
-            productCartId,
-            requestTimestamp
-        ).then(function (products) {
-            // add associated products to cart
-            cart.products = products
-
-            return cart
+        return cartProductModel.getCartProductsSummaryByCartId({
+            cartId: productCartId,
+            session: session,
         })
     })
-    // execute any event handlers
-    .then(function (cart) {
-        return immutable.trigger('afterGetCartById', {
-            cart: cart,
-            requestTimestamp: requestTimestamp,
-            session: cartController.req.session,
-        })
+    // add products to cart
+    .then(function (products) {
+        cart.products = products
     })
     // return response
-    .then(function (res) {
-        cartController.res.json(res)
-        cartController.res.end()
+    .then(function () {
+        session.res.json(cart)
+        session.res.end()
     })
     // catch errors
     .catch(function (err) {
-        cartController.next(err)
+        session.next(err)
     })
 }
 
-Cart.prototype.getCartBySessionId = function getCartBySessionId () {
-    var cartController = this
-    // get input
-    var originalSessionId = cartController.req.session.data.originalSessionId
-    var requestTimestamp = cartController.req.requestTimestamp
-    var sessionId = cartController.req.session.data.sessionId
+/**
+ * @function getCartBySessionId
+ *
+ * @param {object} session - request session
+ * 
+ * @returns {Promise}
+ */
+function getCartBySessionId (session) {
     // attmept to get cart by session id
-    cartModel.getMostRecentCartBySessionId(
-        originalSessionId,
-        sessionId,
-        requestTimestamp
-    ).then(function (cart) {
+    cartModel.getMostRecentCartBySessionId({
+        session: session,
+    })
+    .then(function (cart) {
         // if cart was not found then create new cart
         if (!cart) {
-            return cartController.createCart()
+            return cartController.createCart(session)
         }
         // if cart was found check to make sure it does not have order
-        return orderModel.getOrderByCartId(cart.cartId, requestTimestamp).then(function (order) {
-            return order
-                // if order was found return new cart
-                ? cartController.createCart()
-                // otherwise return current cart
-                : cartController.getCartById(cart.cartId)
+        return orderModel.getOrderByCartId({
+            cartId: cart.cartId,
+            session: session,
+        })
+        .then(function (order) {
+            // if order was found return new cart
+            if (order) {
+                return cartController.createCart(session)
+            }
+            // otherwise return current cart
+            else {
+                // set cart id in request for controller
+                session.req.params.cartId = cart.cartId
+                // get cart
+                return cartController.getCartById(session)
+            }
         });
     }).catch(function (err) {
-        cartController.next(err)
+        session.next(err)
     })
 }
 
-Cart.prototype.updateCart = function updateCart () {
-    var cartController = this
+/**
+ * @function updateCart
+ *
+ * @param {object} session - request session
+ * 
+ * @returns {Promise}
+ */
+function updateCart (session) {
     // get input
-    var cartData = cartController.req.body.cartData
-    var cartId = cartController.req.params.cartId
-    var requestTimestamp = cartController.req.requestTimestamp
-    var sessionId = cartController.req.session.data.sessionId
+    var cartData = session.req.body.cartData
+    var cartId = session.req.params.cartId
+    var originalSessionId = session.data.originalSessionId
+    var sessionId = session.data.sessionId
     // load cart
-    cartModel.getCartById(cartId, requestTimestamp).then(function (cart) {
+    cartModel.getCartById({
+        cartId: cartId,
+        session: session,
+    })
+    .then(function (cart) {
         // cart id was not found
         if (!cart) {
             return Promise.reject(notFound())
@@ -331,22 +370,19 @@ Cart.prototype.updateCart = function updateCart () {
         // original cart id is either current cart or its original cart id
         var originalCartId = cart.originalCartId || cart.cartId
         // create cart
-        return cartModel.createCart(
-            cartData,
-            originalCartId,
-            sessionId,
-            requestTimestamp
-        )
+        return cartModel.createCart({
+            cartData: cartData,
+            originalCartId: originalCartId,
+            session: session,
+        })
     })
     // return response
     .then(function (res) {
-        cartController.res.json(res)
-        cartController.res.end()
+        session.res.json(res)
+        session.res.end()
     })
     // catch errors
     .catch(function (err) {
-        cartController.next(err)
+        session.next(err)
     })
 }
-
-module.exports = Cart

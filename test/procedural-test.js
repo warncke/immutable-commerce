@@ -11,6 +11,7 @@ var request = require('request')
 var moment = require('moment')
 var rp = require('request-promise')
 var seedrandom = require('seedrandom')
+var stringify = require('json-stable-stringify')
 
 /* models */
 
@@ -19,12 +20,12 @@ var productModel = require('../models/product')
 /* CLI setup */
 
 var cli = commandLineArgs([
-    { name: "avgDelay", type: Number, defaultValue: 1000 },
+    { name: "avgDelay", type: Number, defaultValue: 10000 },
     { name: "avgMod", type: Number, defaultValue: 15 },
     { name: "baseUrl", type: String, defaultValue: "http://marketplace.dev:3000" },
-    { name: "concurrent", alias: "c", type: Number, defaultValue: 200 },
+    { name: "concurrent", alias: "c", type: Number, defaultValue: 5000 },
     { name: "help", type: Boolean, defaultValue: false },
-    { name: "number", alias: "n", type: Number, defaultValue: 1000 },
+    { name: "number", alias: "n", type: Number, defaultValue: 5000 },
 ])
 
 var options = cli.parse()
@@ -61,6 +62,8 @@ var errorCount = 0
 var requestCount = 0
 var successCount = 0
 
+var testErrors = 0
+
 var runStartTime = new Date().getTime()
 
 /* test data */
@@ -68,96 +71,136 @@ var runStartTime = new Date().getTime()
 // global product source
 var products = [];
 
+// pre-generated test plan that includes all steps to be taken
+var testPlans = []
+
 // load product ids
 generateProductIds().then(function () {
+    // create test plans now that products are loaded
+    testPlans = createTestPlans()
     // print statistics periodically
     setTimeout(printStatus, 1000)
-
     // start execution of tests - this function will set a timeout
     // that recalls it until all tests are complete
     startTests()
 });
 
-/* program functions */
+/* http request functions */
 
-function finish () {
-    process.exit()
+function get (cookieJar, url) {
+    // create promise that will be resolved when request complete
+    return new Promise(function (resolve) {
+        requestCount++;
+        // get start time
+        var startTime = new Date().getTime()
+        // make request
+        rp({
+            jar: cookieJar,
+            json: true,
+            uri: options.baseUrl+url,
+        })
+        .then(function (res) {
+            // track success
+            successCount++
+            // get run time
+            var runTime = new Date().getTime() - startTime
+            // track request time
+            timeCount++
+            timeSum += runTime
+            // resolve
+            resolve(res)
+        })
+        .catch(function (err) {
+            console.log(err)
+            // track error
+            errorCount++
+            // also resolve on error so execution does not halt
+            resolve(err)
+        })
+    })
 }
 
-function modifyCartProducts (cartId, cookieJar) {
-    // number of product modifications to perform
-    var numMod = getRandom(options.avgMod - 5, options.avgMod + 5)
-    // promises for all requests to be performed
-    var promises = []
-    // products for this test iteration
-    var testProducts = []
-    // time to delay before performing request
-    var delay = 0
-    // schedule requests
-    for (var i=0; i < numMod; i++) {
-        // get delay for this request instance - each request is delayed
-        // past the request before it
-        delay += getRandom(options.avgDelay - 100, options.avgDelay + 100)
-        // product id to modify
-        var productId
-        // quantity to add or remove
-        var quantity
-        // if some products have already been modified in this test iteration then
-        // either modify an existing product again or modify a new product
-        if (testProducts.length && getRandom(0, 1)) {
-            productId = testProducts[ getRandom(0, testProducts.length - 1) ]
-            // quantity can be either positive or negative on existing product
-            quantity = getRandom(-2, 5)
-        }
-        // get new product
-        else {
-            productId = products[ getRandom(0, products.length - 1) ]
-            // always positive on new product
-            quantity = getRandom(1, 5)
-        }
+function post (cookieJar, url, body) {
+    // create promise that will be resolved when request complete
+    return new Promise(function (resolve) {
+        requestCount++;
+        // get start time
+        var startTime = new Date().getTime()
+        // make request
+        rp({
+            body: body,
+            jar: cookieJar,
+            json: true,
+            method: 'POST',
+            uri: options.baseUrl+url,
+        })
+        .then(function (res) {
+            // track success
+            successCount++
+            // get run time
+            var runTime = new Date().getTime() - startTime
+            // track request time
+            timeCount++
+            timeSum += runTime
+            // resolve
+            resolve(res)
+        })
+        .catch(function (err) {
+            console.log(err)
+            // track error
+            errorCount++
+            // also resolve on error so execution does not halt
+            resolve(err)
+        })
+    })
+}
 
-        // add promise to list of promises for all requests
-        promises.push( modifyCartProduct(cartId, cookieJar, delay, productId, quantity) )
+/* test functions */
+
+function modifyCartProducts (cartId, cookieJar, testPlan, modNum) {
+    // get modification spec
+    var mod = testPlan.mods[modNum];
+    // return error on bad mod
+    if (!mod) {
+        return Promise.reject()
     }
-    // resolve once all requests complete
-    return Promise.all(promises)
+    // create cart modification that will execute after delay
+    return modifyCartProduct(
+        cartId,
+        cookieJar,
+        mod.delay,
+        mod.productId,
+        mod.quantity
+    )
+    // execute after modification is complete
+    .then(function () {
+        // peform next modification
+        if (++modNum < testPlan.numMod) {
+            return modifyCartProducts(cartId, cookieJar, testPlan, modNum)
+        }
+        // if all planned modifications have been performed then complete
+        else {
+            return Promise.resolve()
+        }
+    })
 }
 
 function modifyCartProduct (cartId, cookieJar, delay, productId, quantity) {
     // create promise that will be resolved when request complete
-    return new Promise(function (resolve, reject) {
+    return new Promise(function (resolve) {
         // perform request after delay
         setTimeout(function () {
-            requestCount++;
-
-            rp({
-                body: {
-                    quantity: quantity
-                },
-                jar: cookieJar,
-                json: true,
-                method: 'POST',
-                resolveWithFullResponse: true,
-                time: true,
-                uri: options.baseUrl+'/cart/'+cartId+'/product/'+productId,
-            }).then(function (res) {
-                // track successful requests
-                successCount++
-                // track request time
-                timeCount++
-                timeSum += res.elapsedTime
-                // resolve outer promise
-                resolve(res)
-            }).catch(function (err) {
-                errorCount++
-                // keep going on errors for now
-                resolve(err)
-            })
+            var url = '/cart/'+cartId+'/product/'+productId
+            var body = {quantity: quantity}
+            // make request
+            post(cookieJar, url, body).then(resolve)
         }, delay)
     })    
 }
 
 function runTest () {
+    // get test plan
+    var testPlan = testPlans[started]
     // keep track of tests started
     started++
     // add current test to in flight count
@@ -167,44 +210,26 @@ function runTest () {
     var cookieJar = request.jar()
 
     // capture variables to pass between steps
-    var cartId;
+    var cartId
 
     requestCount++
 
     // request base URL to get session
-    rp({
-        jar: cookieJar,
-        json: true,
-        resolveWithFullResponse: true,
-        time: true,
-        uri: options.baseUrl,
-    })
+    get(cookieJar, '/')
     // request cart
-    .then(function (res) {
-        successCount++
-        requestCount++
-        // track request time
-        timeCount++
-        timeSum += res.elapsedTime
-        // request cart (creates new cart)
-        return rp({
-            jar: cookieJar,
-            json: true,
-            resolveWithFullResponse: true,
-            time: true,
-            uri: options.baseUrl+'/cart',
-        })
+    .then(function () {
+        return get(cookieJar, '/cart')
     })
     // add and remove product from cart
     .then(function (res) {
-        successCount++
-        // track request time
-        timeCount++
-        timeSum += res.elapsedTime
         // capture cartId for use in later steps
-        cartId = res.body.cartId
+        cartId = res.cartId
         // perform a variable number of product modifications
-        return modifyCartProducts(cartId, cookieJar)
+        return modifyCartProducts(cartId, cookieJar, testPlan, 0)
+    })
+    .then(function (res) {
+        // perform tests
+        return validateTestPlan(cartId, cookieJar, testPlan)
     })
     .then(function (res) {
         // update program counters
@@ -212,6 +237,7 @@ function runTest () {
         run++
     })
     .catch(function (err) {
+        console.log(err)
         errorCount++
         inflight--
         run++
@@ -234,13 +260,49 @@ function startTests() {
     setTimeout(startTests, getRandom(2,10))
 }
 
+function validateTestPlan (cartId, cookieJar, testPlan) {
+    var i, testPlanProducts = {}
+    // calculate quantity sums for test plan products
+    for (i=0; i < testPlan.mods.length; i++) {
+        var mod = testPlan.mods[i]
+        // create entry for each product
+        if (!testPlanProducts[mod.productId]) {
+            testPlanProducts[mod.productId] = 0
+        }
+        // update quantity
+        testPlanProducts[mod.productId] += mod.quantity
+    }
+
+    var productIds = Object.keys(testPlanProducts)
+    // convert values to strings to match db response
+    for (i=0; i < productIds.length; i++) {
+        testPlanProducts[productIds[i]] = testPlanProducts[productIds[i]].toString()
+    }
+    // build cart url
+    var url = '/cart/'+cartId
+    // get current cart
+    return get(cookieJar, url).then(function (res) {
+        if (stringify(res.products) !== stringify(testPlanProducts)) {
+            console.log("TEST ERROR: product counts did not match")
+            testErrors++
+        }
+    })
+}
+
+
+/* program functions */
+
+function finish () {
+    process.exit()
+}
+
 function printHelp () {
     console.log("\nUsage: node test/procedural-test.js [options]\n")
-    console.log("\t--avgDelay\t[1000]\t\taverage time between requests (ms)")
+    console.log("\t--avgDelay\t[10000]\t\taverage time between requests (ms)")
     console.log("\t--avgMod\t[15]\t\taverage product modifications (add+remove)")
     console.log("\t--baseUrl\t[http://marketplace.dev:3000]")
-    console.log("\t--concurrent\t[200]\t\tnumber of tests to run concurrently")
-    console.log("\t--number\t[1000]\t\ttotal number of tests to run")
+    console.log("\t--concurrent\t[5000]\t\tnumber of tests to run concurrently")
+    console.log("\t--number\t[5000]\t\ttotal number of tests to run")
     console.log("\n")
 }
 
@@ -248,18 +310,20 @@ function printStatus () {
     var curTime = new Date().getTime();
     var runTime = curTime - runStartTime;
 
-    var message = successCount + ' requests; ' + parseInt(successCount / (runTime / 1000)) + ' total rps'
+    var message = successCount + ' reqs; ' + parseInt(successCount / (runTime / 1000)) + ' tot rps'
 
     // calculate rps for last iteration only
     if (lastCount && lastTime) {
-        message += '; ' + parseInt((successCount - lastCount) / ((curTime - lastTime) / 1000)) + ' current rps'
+        message += '; ' + parseInt((successCount - lastCount) / ((curTime - lastTime) / 1000)) + ' cur rps'
     }
     // calculate avg request time
     if (timeCount > 0) {
-        message += '; ' + (timeSum / timeCount).toFixed(2) + 'ms avg req time'
+        message += '; ' + (timeSum / timeCount).toFixed(2) + 'ms avg'
     }
 
-    message += '; ' + errorCount + ' errors'
+    message += '; ' + errorCount + ' req err'
+
+    message += '; ' + testErrors + ' test err'
 
     lastCount = successCount
     lastTime = curTime
@@ -277,8 +341,54 @@ function printStatus () {
 
 /* data generation functions */
 
+function createTestPlan () {
+    var testPlan = {}
+    // products to be modified by this test plan
+    testPlan.products = []
+    // list of product modifications to perform
+    testPlan.mods = []
+    // number of product modifications to perform
+    testPlan.numMod = getRandom(options.avgMod - 5, options.avgMod + 5)
+    // create specification for modifications to be performed
+    for (var i=0; i < testPlan.numMod; i++) {
+        // specification for product modification
+        var mod = {};
+        // number of ms to delay beofre making request
+        mod.delay = getRandom(options.avgDelay - (options.avgDelay * .25), options.avgDelay + (options.avgDelay * .25))
+        // if some products have already been modified in this test iteration then
+        // either modify an existing product again or modify a new product
+        if (testPlan.products.length && getRandom(0, 1)) {
+            // get a random product from products already modified
+            mod.productId = testPlan.products[ getRandom(0, testProducts.length - 1) ]
+            // quantity can be either positive or negative on existing product
+            mod.quantity = getRandom(-2, 5)
+        }
+        // get new product
+        else {
+            // get a random product from global product list
+            mod.productId = products[ getRandom(0, products.length - 1) ]
+            // always positive on new product
+            mod.quantity = getRandom(1, 5)
+        }
+        // add specification to list
+        testPlan.mods.push(mod)
+    }
+
+    return testPlan
+}
+
+function createTestPlans () {
+    var testPlans = []
+
+    for (var i=0; i < options.number; i++) {
+        testPlans[i] = createTestPlan()
+    }
+
+    return testPlans
+}
+
 function generateProductIds () {
-    return productModel.getProducts(requestTimestamp).then(function (res) {
+    return get({}, '/product').then(function (res) {
         // add product ids to global list for use in tests
         for (var i=0; i < res.length; i++) {
             products.push(res[i].productId)
