@@ -1,9 +1,9 @@
 CREATE TABLE `request` (
   `requestId` binary(16) NOT NULL,
   `accountId` binary(16) DEFAULT NULL,
-  `bodyId` binary(16) DEFAULT NULL,
-  `cookieId` binary(16) DEFAULT NULL,
-  `headerId` binary(16) DEFAULT NULL,
+  `requestBodyId` binary(16) DEFAULT NULL,
+  `requestCookieId` binary(16) DEFAULT NULL,
+  `requestHeaderId` binary(16) DEFAULT NULL,
   `instanceId` binary(16) DEFAULT NULL,
   `queryId` binary(16) DEFAULT NULL,
   `sessionId` binary(16) DEFAULT NULL,
@@ -20,21 +20,4 @@ CREATE TABLE `request` (
   KEY `sessionId` (`sessionId`),
   KEY `ipAddress` (`ipAddress`),
   KEY `url` (`url`(333))
-) ENGINE=MyISAM DEFAULT CHARSET=utf8
-
-CREATE VIEW request_hex AS SELECT
-  HEX(requestId) AS requestId,
-  HEX(accountId) AS accountId,
-  HEX(bodyId) AS bodyId,
-  HEX(cookieId) AS cookieId,
-  HEX(headerId) AS headerId,
-  HEX(instanceId) AS instanceId,
-  HEX(queryId) AS queryId,
-  HEX(sessionId) AS sessionId,
-  HEX(userAgentId) AS userAgentId,
-  host,
-  ipAddress,
-  method,
-  url,
-  requestCreateTime
-FROM request;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;

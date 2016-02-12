@@ -1,0 +1,15 @@
+<h2>Search</h2>
+<form action="/search" method="POST">
+<select name="searchType">
+    <option value="requestId">Request Id</option>
+    <option value="accountId">Account Id</option>
+    <option value="sessionId">Session Id</option>
+    <option value="ipAddress">IP Address</option>
+    <option value="url">Url</option>
+    <option value="dataId">Data Id</option>
+<select>
+<input type="text" name="query" size="32" />
+<input type="submit" name="submit" value="Search" />
+</form>
+
+<hr />

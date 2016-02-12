@@ -26,20 +26,21 @@ var cartController = module.exports = immutable.controller('Cart', {
 /**
  * @function cartProduct
  *
- * @param {object} session - request session
+ * @param {object} req - express request
  * 
  * @returns {Promise}
  */
-function cartProduct (session) {
+function cartProduct (req) {
+    var session = req.session
     // get input
-    var cartId = session.req.params.cartId
+    var cartId = req.params.cartId
     var originalSessionId = session.data.originalSessionId
-    var productId = session.req.params.productId
-    var quantity = parseInt(session.req.body.quantity)
+    var productId = req.params.productId
+    var quantity = parseInt(req.body.quantity)
     var sessionId = session.data.sessionId
     // require number for quantity
     if (typeof quantity !== 'number') {
-        return session.next(badRequest('Invalid quantity - integer required'))
+        return badRequest('Invalid quantity - integer required')
     }
     // load cart
     var cartPromise = cartModel.getCartById({
@@ -69,19 +70,19 @@ function cartProduct (session) {
         var productId = res[2]
         // cart id was not found
         if (!cart) {
-            return Promise.reject(notFound())
+            return notFound()
         }
         // cart does not belong to current session
         if (cart.sessionId !== sessionId && cart.sessionId !== originalSessionId) {
-            return Promise.reject(accessDenied())
+            return accessDenied()
         }
         // product id not found
         if (!productId) {
-            return Promise.reject(badRequest('productId not found'))
+            return badRequest('productId not found')
         }
         // product modifications on carts with orders not allowed
         if (order) {
-            return Promise.reject(badRequest('Product modification not allowed on cart with order'))
+            return badRequest('Product modification not allowed on cart with order')
         }
         // if cart is a modification then link all changes to the original cart
         // so that products do not get spread out between modifications and lost
@@ -96,24 +97,21 @@ function cartProduct (session) {
     })
     // return refreshed cart on success
     .then(function () {
-        return cartController.getCartById(session)
-    })
-    // catch errors
-    .catch(function (err) {
-        session.next(err)
+        return cartController.getCartById(req)
     })
 }
 
 /**
  * @function createCart
  *
- * @param {object} session - request session
+ * @param {object} req - express request
  * 
  * @returns {Promise}
  */
-function createCart (session) {
+function createCart (req) {
+    var session = req.session
     // get input
-    var cartData = session.req.body.cartData
+    var cartData = req.body.cartData
     var originalCartId;
     // create cart
     return cartModel.createCart({
@@ -126,35 +124,27 @@ function createCart (session) {
         cart.products = {}
         return cart
     })
-    // return response
-    .then(function (res) {
-        session.res.json(res)
-        session.res.end()
-    })
-    // catch errors
-    .catch(function (err) {
-        session.next(err)
-    })
 }
 
 /**
  * @function createOrder
  *
- * @param {object} session - request session
+ * @param {object} req - express request
  * 
  * @returns {Promise}
  */
-function createOrder (session) {
+function createOrder (req) {
+    var session = req.session
     // get input
     var accountId = session.data.accountId
-    var cartId = session.req.params.cartId
+    var cartId = req.params.cartId
     var sessionId = session.data.sessionId
     // variables to populate in promises
     var cart
     var originalOrderId
     // require account to create order
     if (!accountId) {
-        session.next(accessDenied('account required to create order'))
+        return accessDenied('account required to create order')
     }
     // load cart
     return cartModel.getCartById({
@@ -165,11 +155,11 @@ function createOrder (session) {
     .then(function (resCart) {
         // cart id was not found
         if (!resCart) {
-            return Promise.reject(notFound())
+            return notFound()
         }
         // cart does not belong to current session
         if (resCart.sessionId !== sessionId) {
-            return Promise.reject(accessDenied())
+            return accessDenied()
         }
         // set cart in outer context for other promise handlers
         cart = resCart
@@ -187,7 +177,7 @@ function createOrder (session) {
     // require quantity greater than zero
     .then(function (quantity) {
         if (quantity <= 0) {
-            return Promise.reject(badRequest('Cannot create order with no products'))
+            return badRequest('Cannot create order with no products')
         }
     })
     // load order for original cart
@@ -215,18 +205,13 @@ function createOrder (session) {
             session: session,
         })
     })
-    // return response
-    .then(function (res) {
-        session.res.json(res)
-        session.res.end()
-    })
-    // catch errors
+    // catch duplicate errors
     .catch(function (err) {
         if (isDuplicate(err)) {
-            session.next(badRequest('cannot create multiple orders for cart'))
+            return badRequest('cannot create multiple orders for cart')
         }
         else {
-            session.next(err)
+            return Promise.reject(err)
         }
     })
 }
@@ -234,13 +219,14 @@ function createOrder (session) {
 /**
  * @function getCartById
  *
- * @param {object} session - request session
+ * @param {object} req - express request
  * 
  * @returns {Promise}
  */
-function getCartById (session) {
+function getCartById (req) {
+    var session = req.session
     // get input
-    var cartId = session.req.params.cartId
+    var cartId = req.params.cartId
     var originalSessionId = session.data.originalSessionId
     var sessionId = session.data.sessionId
     // variables to populate in promises
@@ -266,11 +252,11 @@ function getCartById (session) {
         var order = res[1]
         // cart id was not found
         if (!cart) {
-            return Promise.reject(notFound())
+            return notFound()
         }
         // cart does not belong to current session
         if (cart.sessionId !== sessionId && cart.sessionId !== originalSessionId) {
-            return Promise.reject(accessDenied())
+            return accessDenied()
         }
         // add associated order to cart
         cart.order = order
@@ -288,34 +274,28 @@ function getCartById (session) {
     // add products to cart
     .then(function (products) {
         cart.products = products
-    })
-    // return response
-    .then(function () {
-        session.res.json(cart)
-        session.res.end()
-    })
-    // catch errors
-    .catch(function (err) {
-        session.next(err)
+        // resolve with cart
+        return cart
     })
 }
 
 /**
  * @function getCartBySessionId
  *
- * @param {object} session - request session
+ * @param {object} req - express request
  * 
  * @returns {Promise}
  */
-function getCartBySessionId (session) {
+function getCartBySessionId (req) {
+    var session = req.session
     // attmept to get cart by session id
-    cartModel.getMostRecentCartBySessionId({
+    return cartModel.getMostRecentCartBySessionId({
         session: session,
     })
     .then(function (cart) {
         // if cart was not found then create new cart
         if (!cart) {
-            return cartController.createCart(session)
+            return cartController.createCart(req)
         }
         // if cart was found check to make sure it does not have order
         return orderModel.getOrderByCartId({
@@ -323,49 +303,46 @@ function getCartBySessionId (session) {
             session: session,
         })
         .then(function (order) {
-            // if order was found return new cart
-            if (order) {
-                return cartController.createCart(session)
-            }
-            // otherwise return current cart
-            else {
+            // order not found
+            if (!order) {
                 // set cart id in request for controller
-                session.req.params.cartId = cart.cartId
+                req.params.cartId = cart.cartId
                 // get cart
-                return cartController.getCartById(session)
+                return cartController.getCartById(req)
             }
+            // return current cart
+            return cartController.createCart(req)
         });
-    }).catch(function (err) {
-        session.next(err)
     })
 }
 
 /**
  * @function updateCart
  *
- * @param {object} session - request session
+ * @param {object} req - express request
  * 
  * @returns {Promise}
  */
-function updateCart (session) {
+function updateCart (req) {
+    var session = req.session
     // get input
-    var cartData = session.req.body.cartData
-    var cartId = session.req.params.cartId
+    var cartData = req.body.cartData
+    var cartId = req.params.cartId
     var originalSessionId = session.data.originalSessionId
     var sessionId = session.data.sessionId
     // load cart
-    cartModel.getCartById({
+    return cartModel.getCartById({
         cartId: cartId,
         session: session,
     })
     .then(function (cart) {
         // cart id was not found
         if (!cart) {
-            return Promise.reject(notFound())
+            return notFound()
         }
         // cart does not belong to current session
         if (cart.sessionId !== sessionId && cart.sessionId !== originalSessionId) {
-            return Promise.reject(accessDenied())
+            return accessDenied()
         }
         // original cart id is either current cart or its original cart id
         var originalCartId = cart.originalCartId || cart.cartId
@@ -375,14 +352,5 @@ function updateCart (session) {
             originalCartId: originalCartId,
             session: session,
         })
-    })
-    // return response
-    .then(function (res) {
-        session.res.json(res)
-        session.res.end()
-    })
-    // catch errors
-    .catch(function (err) {
-        session.next(err)
     })
 }

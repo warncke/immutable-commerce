@@ -11,6 +11,7 @@ var path = require('path')
 
 /* application modules */
 var instance = require('./lib/instance')
+var microTimestamp = require('./lib/micro-timestamp')
 var requestLogger = require('./lib/request-logger')
 var responseLogger = require('./lib/response-logger')
 var session = require('./lib/session')
@@ -37,8 +38,7 @@ app.use(cookieParser())
 // capture and optionally set the start time of the program execution 
 // all queries are executed within the boundaries set by this time
 app.use(function (req, res, next) {
-    req.requestMoment = moment()
-    req.requestTimestamp = req.requestMoment.format('YYYY-MM-DD HH:mm:ss.SSSSSS')
+    req.requestTimestamp = moment().format('YYYY-MM-DD HH:mm:ss.SSSSSS')
     next()
 })
 

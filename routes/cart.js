@@ -28,38 +28,68 @@ module.exports = router
 /* route handlers */
 
 function cartProduct (req, res, next) {
-    // set next callback for current context
-    req.session.next = next
     // call controller function
-    return cartController.cartProduct(req.session)
+    return cartController.cartProduct(req)
+    // handle response
+    .then(function (data) {
+        res.send(data)
+    })
+    // handle error
+    .catch(function (err) {
+        next(err)
+    })
 }
 
 function createCart (req, res, next) {
-    // set next callback for current context
-    req.session.next = next
     // call controller function
-    return cartController.createCart(req.session)
+    return cartController.createCart(req)
+    // handle response
+    .then(function (data) {
+        res.send(data)
+    })
+    // handle error
+    .catch(function (err) {
+        next(err)
+    })
 }
 
 function createOrder (req, res, next) {
-    // set next callback for current context
-    req.session.next = next
     // call controller function
-    return cartController.createOrder(req.session)
+    return cartController.createOrder(req)
+    // handle response
+    .then(function (data) {
+        res.send(data)
+    })
+    // handle error
+    .catch(function (err) {
+        next(err)
+    })
 }
 
 function getCart (req, res, next) {
-    // set next callback for current context
-    req.session.next = next
     // call controller function
-    return req.params.cartId
-        ? cartController.getCartById(req.session)
-        : cartController.getCartBySessionId(req.session)
+    var promise = req.params.cartId
+        ? cartController.getCartById(req)
+        : cartController.getCartBySessionId(req)
+    // handle response
+    promise.then(function (data) {
+        res.send(data)
+    })
+    // handle error
+    .catch(function (err) {
+        next(err)
+    })
 }
 
 function updateCart (req, res, next) {
-    // set next callback for current context
-    req.session.next = next
     // call controller function
-    return cartController.updateCart(req.session)
+    return cartController.updateCart(req)
+    // handle response
+    .then(function (data) {
+        res.send(data)
+    })
+    // handle error
+    .catch(function (err) {
+        next(err)
+    })
 }

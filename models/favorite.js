@@ -30,7 +30,9 @@ function createFavorite (args) {
     // insert favorite
     return db('immutable').query(
         'INSERT INTO favorite VALUES(:accountId, :productId, :toggle, :favoriteCreateTime)',
-        favorite
+        favorite,
+        undefined,
+        args.session
     ).then(function () {
         // return data on success
         return favorite
@@ -52,6 +54,8 @@ function getFavorites (args) {
         {
             accountId: args.accountId,
             requestTimestamp: args.session.req.requestTimestamp
-        }
+        },
+        undefined,
+        args.session
     )
 }

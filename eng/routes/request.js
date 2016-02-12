@@ -6,13 +6,14 @@ var router = express.Router()
 
 /* application libraries */
 var requestController = require('../controllers/request')
+var render = require('../../lib/render')
 
 /* routes */
 
 // get list of requests
 router.get('/requests', getRequests)
 // get a specific request
-router.put('/request/:requestId', getRequest)
+router.get('/request/:requestId', getRequest)
 
 module.exports = router
 
@@ -23,7 +24,7 @@ function getRequests (req, res, next) {
     requestController.getRequests(req)
     // handle success
     .then(function (data) {
-        res.render('requests', data)
+        render(req, res, 'requests', data)
     })
     // handle error
     .catch(function (err) {
@@ -36,7 +37,7 @@ function getRequest (req, res, next) {
     requestController.getRequest(req)
     // handle success
     .then(function (data) {
-
+        render(req, res, 'request', data)
     })
     // handle error
     .catch(function (err) {

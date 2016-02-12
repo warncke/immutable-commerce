@@ -20,15 +20,27 @@ module.exports = router
 /* route handlers */
 
 function getFavorites (req, res, next) {
-   // set next callback for current context
-    req.session.next = next
     // call controller function
-    return favoriteController.getFavorites(req.session)
+    return favoriteController.getFavorites(req)
+    // handle response
+    .then(function (data) {
+        res.send(data)
+    })
+    // handle error
+    .catch(function (err) {
+        next(err)
+    })
 }
 
 function createFavorite (req, res, next) {
-    // set next callback for current context
-    req.session.next = next
     // call controller function
-    return favoriteController.createFavorite(req.session)
+    return favoriteController.createFavorite(req)
+    // handle response
+    .then(function (data) {
+        res.send(data)
+    })
+    // handle error
+    .catch(function (err) {
+        next(err)
+    })
 }

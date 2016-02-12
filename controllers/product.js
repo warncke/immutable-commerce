@@ -12,22 +12,14 @@ var productController = module.exports = immutable.controller('Product', {
 /**
  * @function getProducts
  *
- * @param {object} session - request session
+ * @param {object} req - express request
  * 
  * @returns {Promise}
  */
-function getProducts (session) {
+function getProducts (req) {
+    var session = req.session
     // get products
-    productModel.getProducts({
+    return productModel.getProducts({
         session: session,
-    })
-    // return response
-    .then(function (res) {
-        session.res.json(res)
-        session.res.end()
-    })
-    // catch errors
-    .catch(function (err) {
-        session.next(err)
     })
 }

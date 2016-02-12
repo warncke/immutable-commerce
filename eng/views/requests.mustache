@@ -1,36 +1,9 @@
 {{> header}}
 
-<table>
-    <tr>
-        <th>Request Time</th>
-        <th>Method</th>
-        <th>Url</th>
-        <th>Instance Id</th>
-        <th>Request Id</th>
-        <th>Session Id</th>
-        <th>Account Id</th>
-        <th>Body Id</th>
-        <th>Header Id</th>
-        <th>Cookie Id</th>
-        <th>Query Id</th>
-    </tr>
+<h2><a href="/requests">Most Recent Requests</a></h2>
 
-    {{#requests}}
-    <tr>
-        <td>{{requestCreateTimeTime}}</td>
-        <td>{{method}}</td>
-        <td>{{url}}</td>
-        <td>{{instanceIdShort}}</td>
-        <td><a href="/request/{{requestId}}">{{requestIdShort}}</a></td>
-        <td>{{sessionIdShort}}</td>
-        <td>{{accountIdShort}}</td>
-        <td>{{bodyIdShort}}</td>
-        <td>{{headerIdShort}}</td>
-        <td>{{cookieIdShort}}</td>
-        <td>{{queryIdShort}}</td>
-    </tr>
-    {{/requests}}
+<hr />
 
-</table>
+{{> requestsTable}}
 
 {{> footer}}

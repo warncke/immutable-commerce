@@ -7,8 +7,7 @@ var router = express.Router()
 /* routes */
 
 router.get('/', function(req, res, next) {
-    res.json(req.session.data)
-    res.end()
+    res.send(req.session.data)
 });
 
 module.exports = router

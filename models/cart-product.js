@@ -33,7 +33,9 @@ function createCartProduct (args) {
     // insert part product
     return db('immutable').query(
         'INSERT INTO cartProduct VALUES(UNHEX(:cartId), UNHEX(:productId), :quantity, :cartProductCreateTime)',
-        cartProduct
+        cartProduct,
+        undefined,
+        args.session
     ).then(function () {
         // if no error on insert return data
         return cartProduct
@@ -55,7 +57,9 @@ function getCartProductsByCartId (args) {
         {
             cartId: args.cartId,
             requestTimestamp: args.session.req.requestTimestamp
-        }
+        },
+        undefined,
+        args.session
     ).then(function (res) {
         for (var i=0; i < res.length; i++) {
             // convert product data to JSON
@@ -80,7 +84,9 @@ function getCartProductsSummaryByCartId (args) {
         {
             cartId: args.cartId,
             requestTimestamp: args.session.req.requestTimestamp
-        }
+        },
+        undefined,
+        args.session
     ).then(function (res) {
         var products = {}
         // build product quantity data
@@ -108,7 +114,9 @@ function getCartProductsTotalQuantityByCartId (args) {
         {
             cartId: args.cartId,
             requestTimestamp: args.session.req.requestTimestamp
-        }
+        },
+        undefined,
+        args.session
     ).then(function (res) {
         return res.info.numRows === '1' ? parseInt(res[0].quantity) : 0
     })

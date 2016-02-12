@@ -18,8 +18,14 @@ module.exports = router
 /* route handlers */
 
 function getProducts (req, res, next) {
-    // set next callback for current context
-    req.session.next = next
     // call controller function
-    return productController.getProducts(req.session)
+    return productController.getProducts(req)
+    // handle response
+    .then(function (data) {
+        res.send(data)
+    })
+    // handle error
+    .catch(function (err) {
+        next(err)
+    })
 }

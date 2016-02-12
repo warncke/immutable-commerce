@@ -1,0 +1,66 @@
+<table>
+    <tr>
+        <th>Start</th>
+        <th>Time</th>
+        <th>Method</th>
+        <th>Status</th>
+        <th>Bytes</th>
+        <th>Url</th>
+        <th>Instance Id</th>
+        <th>Request Id</th>
+        <th>Session Id</th>
+        <th>Account Id</th>
+        <th>IP Address</th>
+        <th>Request</th>
+        <th>Response</th>
+    </tr>
+
+    {{#requests}}
+    <tr>
+        <td class="center">{{requestCreateTimeDate}}<br />{{requestCreateTimeTime}}</td>
+        <td>{{serverTimeMs}}ms, {{networkTimeMs}}ms</td>
+        <td class="center">{{method}}</td>
+        <td class="center">{{statusCode}}</td>
+        <td class="center">{{contentLength}}</td>
+        <td><a href="/requests?url={{url}}">{{url}}</a></td>
+        <td class="center"><a href="/data/{{instanceId}}">{{instanceIdShort}}</a></td>
+        <td class="center"><a href="/request/{{requestId}}">{{requestIdShort}}</a></td>
+        <td class="center"><a href="/requests?sessionId={{sessionId}}">{{sessionIdShort}}</a></td>
+        <td class="center">{{accountIdShort}}</td>
+        <td class="center"><a href="/requests?ipAddress={{ipAddress}}">{{ipAddress}}</a></td>
+        <td class="center">
+            <table>
+                <tr>
+                    <th>Body</th>
+                    <td><a href="/data/{{requestBodyId}}">{{requestBodyIdShort}}</a></td>
+                </tr>
+                <tr>
+                    <th>Headers</th>
+                    <td><a href="/data/{{requestHeaderId}}">{{requestHeaderIdShort}}</a></td>
+                </tr>
+                <tr>
+                    <th>Cookies</th>
+                    <td><a href="/data/{{requestCookieId}}">{{requestCookieIdShort}}</a></td>
+                </tr>
+                <tr>
+                    <th>Query</th>
+                    <td><a href="/data/{{queryId}}">{{queryIdShort}}</a></td>
+                </tr>
+            </table>
+        </td>
+        <td class="center">
+            <table>
+                <tr>
+                    <th>Body</th>
+                    <td><a href="/data/{{responseBodyId}}">{{responseBodyIdShort}}</a></td>
+                </tr>
+                <tr>
+                    <th>Headers</th>
+                    <td><a href="/data/{{responseHeaderId}}">{{responseHeaderIdShort}}</a></td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    {{/requests}}
+
+</table>

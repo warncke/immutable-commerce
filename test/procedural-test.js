@@ -222,6 +222,10 @@ function runTest () {
     })
     // add and remove product from cart
     .then(function (res) {
+        // no cart returned
+        if (!(res && res.cartId)) {
+            return Promise.reject("could not get cart")
+        }
         // capture cartId for use in later steps
         cartId = res.cartId
         // perform a variable number of product modifications

@@ -1,0 +1,30 @@
+<table>
+    <tr>
+        <th>Num</th>
+        <th>Call Id</th>
+        <th>Module Name</th>
+        <th>Function Name</th>
+        <th>Start</th>
+        <th>Time</th>
+        <th>Stack</th>
+        <th>Arguments</th>
+        <th>Resolved</th>
+        <th>Return</th>
+    </tr>
+
+    {{#calls}}
+    <tr>
+        <td class="center">{{callNumber}}</td>
+        <td class="center">{{moduleCallIdShort}}</td>
+        <td class="center">{{moduleName}}</td>
+        <td class="center">{{functionName}}</td>
+        <td class="center">{{moduleCallCreateTimeTime}}</td>
+        <td class="center">{{runTimeUs}}&micro;s</td>
+        <td class="center"><a href="/data/{{stackId}}">{{stackIdShort}}</a></td>
+        <td class="center"><a href="/data/{{argsId}}">{{argsIdShort}}</a></td>
+        <td class="center">{{resolved}}</td>
+        <td class="center"><a href="/data/{{promiseDataId}}">{{promiseDataIdShort}}</a></td>
+    </tr>
+    {{/calls}}
+
+</table>

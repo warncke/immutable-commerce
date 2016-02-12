@@ -13,8 +13,10 @@ var path = require('path')
 /* application modules */
 
 /* routes */
+var data = require('./routes/data')
 var index = require('./routes/index')
 var request = require('./routes/request')
+var search = require('./routes/search')
 
 /* build express app */
 var app = express()
@@ -38,8 +40,10 @@ app.use(bodyParser.urlencoded({
 app.use(cookieParser())
 
 /* set route handlers */
+app.use('/', data)
 app.use('/', index)
 app.use('/', request)
+app.use('/', search)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

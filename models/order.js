@@ -34,7 +34,9 @@ function createOrder (args) {
     // insert order
     return db('immutable').query(
         'INSERT INTO `order` VALUES(UNHEX(:orderId), UNHEX(:originalOrderId), UNHEX(:accountId), UNHEX(:cartId), :orderCreateTime)',
-        order
+        order,
+        undefined,
+        args.session
     ).then(function () {
         // return order data on successful insert
         return order
@@ -55,7 +57,9 @@ function getOrderByCartId (args) {
         {
             cartId: args.cartId,
             requestTimestamp: args.session.req.requestTimestamp
-        }
+        },
+        undefined,
+        args.session
     ).then(function (res) {
         // return order if found
         return res.info.numRows === '1' ? res[0] : undefined

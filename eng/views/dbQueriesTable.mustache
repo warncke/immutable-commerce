@@ -1,0 +1,24 @@
+<table>
+    <tr>
+        <th>Call Id</th>
+        <th>Query Id</th>
+        <th>Params Id</th>
+        <th>Options Id</th>
+        <th>Start</th>
+        <th>Time</th>
+        <th>Response Id</th>
+    </tr>
+
+    {{#dbQueries}}
+    <tr>
+        <td class="center">{{moduleCallIdShort}}</td>
+        <td class="center"><a href="/data/{{dbQueryId}}">{{dbQueryIdShort}}</a></td>
+        <td class="center"><a href="/data/{{dbQueryParamsId}}">{{dbQueryParamsIdShort}}</a></td>
+        <td class="center"><a href="/data/{{dbQueryOptionsId}}">{{dbQueryOptionsIdShort}}</a></td>
+        <td class="center">{{dbQueryStartCreateTimeTime}}</td>
+        <td class="center">{{queryTimeUs}}&micro;s</td>
+        <td class="center"><a href="/data/{{dbQueryResponseId}}">{{dbQueryResponseIdShort}}</a></td>
+    </tr>
+    {{/dbQueries}}
+
+</table>

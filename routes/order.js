@@ -13,22 +13,34 @@ var orderController = require('../controllers/order')
 // get list of orders 
 router.get('/order', getOrders)
 // get specific order
-router.put('/order/:orderId', getOrder)
+router.get('/order/:orderId', getOrder)
 
 module.exports = router
 
 /* route handlers */
 
 function getOrders (req, res, next) {
-    // set next callback for current context
-    req.session.next = next
     // call controller function
-    return orderController.getOrders(req.session)
+    return orderController.getOrders(req)
+    // handle response
+    .then(function (data) {
+        res.send(data)
+    })
+    // handle error
+    .catch(function (err) {
+        next(err)
+    })
 }
 
 function getOrder (req, res, next) {
-    // set next callback for current context
-    req.session.next = next
     // call controller function
-    return orderController.getOrder(req.session)
+    return orderController.getOrder(req)
+    // handle response
+    .then(function (data) {
+        res.send(data)
+    })
+    // handle error
+    .catch(function (err) {
+        next(err)
+    })
 }

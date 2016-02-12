@@ -19,7 +19,7 @@ var orderController = module.exports = immutable.controller('Order', {
 /**
  * @function getOrder
  *
- * @param {object} session - request session
+ * @param {object} req - express request
  * 
  * @returns {Promise}
  */
@@ -30,7 +30,7 @@ function getOrder (session) {
 /**
  * @function getOrders
  *
- * @param {object} session - request session
+ * @param {object} req - express request
  * 
  * @returns {Promise}
  */

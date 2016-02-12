@@ -47,7 +47,9 @@ function createCart (args) {
     // insert cart
     return db('immutable').query(
         'INSERT INTO cart VALUES(UNHEX(:cartId), UNHEX(:originalCartId), UNHEX(:sessionId), :cartCreateTime, :cartData)',
-        cart
+        cart,
+        undefined,
+        args.session
     ).then(function () {
         // deserialize cartData
         cart = unpackCartData(cart)
@@ -71,7 +73,9 @@ function getCartById (args) {
         {
             cartId: args.cartId,
             requestTimestamp: args.session.req.requestTimestamp
-        }
+        },
+        undefined,
+        args.session
     ).then(function (res) {
         // return cart if found
         return res.info.numRows === '1' ? unpackCartData(res[0]) : undefined
@@ -94,7 +98,9 @@ function getMostRecentCartBySessionId (args) {
             originalSessionId: args.session.data.originalSessionId,
             requestTimestamp: args.session.req.requestTimestamp,
             sessionId: args.session.data.sessionId,
-        }
+        },
+        undefined,
+        args.session
     ).then(function (res) {
         // return cart if found
         return res.info.numRows === '1' ? unpackCartData(res[0]) : undefined

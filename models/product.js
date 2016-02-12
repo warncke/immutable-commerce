@@ -46,7 +46,9 @@ function createProduct (args) {
     // insert product
     return db('immutable').query(
         'INSERT INTO `product` VALUES(UNHEX(:productId), UNHEX(:productDataId), UNHEX(:originalProductId), :productData, :productCreateTime)',
-        product
+        product,
+        undefined,
+        args.session
     ).then(function () {
         // return product data on successful insert
         return product
@@ -65,7 +67,9 @@ function getProducts (args) {
         'SELECT HEX(p.productId) AS productId, HEX(p.productDataId) AS productDataId, HEX(p.originalProductId) AS originalProductId, p.productData, p.productCreateTime FROM product p LEFT JOIN productDelete pd ON p.productId = pd.productId WHERE p.productCreateTime <= :requestTimestamp AND ( pd.productDeleteTime IS NULL OR pd.productDeleteTime > :requestTimestamp )',
         {
             requestTimestamp: args.session.req.requestTimestamp,
-        }
+        },
+        undefined,
+        args.session
     ).then(function (res) {
         for (var i=0; i < res.length; i++) {
             // convert product data to JSON
@@ -89,7 +93,9 @@ function getProductId (args) {
         {
             productId: args.productId,
             requestTimestamp: args.session.req.requestTimestamp
-        }
+        },
+        undefined,
+        args.session
     ).then(function (res) {
         return res.info.numRows === '1' ? res[0].productId : false
     })
