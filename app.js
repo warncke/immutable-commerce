@@ -23,7 +23,12 @@ var order = require('./routes/order')
 var product = require('./routes/product')
 
 /* load extensions */
-require('require-all')(__dirname + '/extensions');
+require('require-all')({
+    dirname: __dirname + '/extensions',
+    excludeDirs: /^\./,
+    filter: /js$/,
+    recursive: true,
+});
 
 /* build express app */
 var app = express()
@@ -64,30 +69,22 @@ app.use(function(req, res, next) {
 
 /* error handlers */
 
-// development error handler
-// will print stacktrace
-if (app.get('env') === 'development') {
-    app.use(function(err, req, res, next) {
-        res.status(err.status || 500)
-        res.send({
-            message: err.message,
-            error: err,
-        })
-    })
-}
-
-// production error handler
-// no stacktraces leaked to user
 app.use(function(err, req, res, next) {
     // log a backtrace unless this is an application level error
     if (!(err.status >= 400 && err.status < 500)) {
         console.log(err.stack)
     }
     res.status(err.status || 500)
-    res.send({
-        message: err.message,
-        error: {},
-    })
+    // send data for 409 Conflict errors
+    if (err.status === 409) {
+        res.send(err.data)
+    }
+    // send error message for all others
+    else {
+        res.send({
+            message: err.message,
+        })
+    }
 })
 
 module.exports = app

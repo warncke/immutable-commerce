@@ -7,10 +7,11 @@ var stableId = require('../lib/stable-id')
 var stringify = require('json-stable-stringify')
 
 /* public functions */
-module.exports = immutable.model('Product', {
+var productModel = module.exports = immutable.model('Product', {
     createProduct: createProduct,
-    getProductId: getProductId,
     getProducts: getProducts,
+    getProductById: getProductById,
+    getProductsById: getProductsById,
 })
 
 /**
@@ -32,7 +33,7 @@ function createProduct (args) {
         product.productData = stringify(args.productData)
     }
     catch (ex) {
-        product.prodcutData = '{}'
+        product.productData = '{}'
     }
     // create product data id from product data alone - there may be
     // multiple instances of the same product data over time if a
@@ -80,16 +81,16 @@ function getProducts (args) {
 }
 
 /**
- * @function createProduct
+ * @function getProductById
  *
  * @param {string} productId - hex id of product to get
  * @param {object} session - request session
  * 
  * @returns {Promise}
  */
-function getProductId (args) {
+function getProductById (args) {
     return db('immutable').query(
-        'SELECT HEX(p.productId) AS productId FROM product p LEFT JOIN productDelete pd ON p.productId = pd.productId WHERE p.productId = UNHEX(:productId) AND p.productCreateTime <= :requestTimestamp AND ( pd.productDeleteTime IS NULL OR pd.productDeleteTime > :requestTimestamp )',
+        'SELECT HEX(p.productId) AS productId, HEX(p.productDataId) AS productDataId, HEX(p.originalProductId) AS originalProductId, p.productData, p.productCreateTime FROM product p LEFT JOIN productDelete pd ON p.productId = pd.productId WHERE p.productId = UNHEX(:productId) AND p.productCreateTime <= :requestTimestamp AND ( pd.productDeleteTime IS NULL OR pd.productDeleteTime > :requestTimestamp )',
         {
             productId: args.productId,
             requestTimestamp: args.session.req.requestTimestamp
@@ -97,6 +98,36 @@ function getProductId (args) {
         undefined,
         args.session
     ).then(function (res) {
-        return res.info.numRows === '1' ? res[0].productId : false
+        for (var i=0; i < res.length; i++) {
+            // convert product data to JSON
+            res[i].productData = JSON.parse(res[i].productData)
+        }
+        return res.length ? res[0] : undefined
     })
+}
+
+/**
+ * @function getProductsById
+ *
+ * @param {string} productId - hex id of product to get
+ * @param {object} session - request session
+ *
+ * @returns {Promise}
+ */
+function getProductsById (args) {
+    var productPromises = []
+    // request all product ids
+    for (var i=0; i < args.productIds.length; i++) {
+        var productId = args.productIds[i]
+        // get product - this is dumb - will be replaced with more
+        // efficient version
+        productPromises.push(
+            productModel.getProductById({
+                productId: productId,
+                session: args.session,
+            })
+        )
+    }
+    // wait for all products to be retrieved
+    return Promise.all(productPromises)
 }

@@ -7,3 +7,8 @@ th {
 tr:nth-child(even) {background: #d6f1ff}
 tr:nth-child(odd) {background: #fff}
 .center {text-align: center}
+
+.black {color: black}
+.green {color: green}
+.orange {color: orange}
+.red {color: red}

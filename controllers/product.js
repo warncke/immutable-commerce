@@ -18,8 +18,16 @@ var productController = module.exports = immutable.controller('Product', {
  */
 function getProducts (req) {
     var session = req.session
-    // get products
-    return productModel.getProducts({
-        session: session,
-    })
+    // get input
+    var productIds = req.query.productId
+    // if product ids were passed make sure they are array
+    if (productIds && !Array.isArray(productIds)) {
+        productIds = [productIds]
+    }
+
+    return productIds
+        // if product ids were passed then only fetch those products
+        ? productModel.getProductsById({productIds: productIds, session: session})
+        // otherwise get all products
+        : productModel.getProducts({session: session})
 }

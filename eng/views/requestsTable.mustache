@@ -20,7 +20,7 @@
         <td class="center">{{requestCreateTimeDate}}<br />{{requestCreateTimeTime}}</td>
         <td>{{serverTimeMs}}ms, {{networkTimeMs}}ms</td>
         <td class="center">{{method}}</td>
-        <td class="center">{{statusCode}}</td>
+        <td class="center {{statusColor}}">{{statusCode}}</td>
         <td class="center">{{contentLength}}</td>
         <td><a href="/requests?url={{url}}">{{url}}</a></td>
         <td class="center"><a href="/data/{{instanceId}}">{{instanceIdShort}}</a></td>

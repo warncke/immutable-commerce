@@ -13,7 +13,7 @@ var instance = require('../lib/instance')
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '3000');
+var port = normalizePort(process.env.PORT || '9077');
 app.set('port', port);
 
 /**

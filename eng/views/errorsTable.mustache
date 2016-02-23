@@ -1,0 +1,18 @@
+<table>
+    <tr>
+        <th>Time</th>
+        <th>Error Id</th>
+        <th>Message</th>
+        <th>Stack Id</th>
+    </tr>
+
+    {{#errors}}
+    <tr>
+        <td class="center">{{errorCreateTimeDate}}<br />{{errorCreateTimeTime}}</td>
+        <td class="center">{{errorIdShort}}</td>
+        <td class="center">{{errorMessage}}</td>
+        <td class="center"><a href="/data/{{errorStackId}}">{{errorStackIdShort}}</a></td>
+    </tr>
+    {{/errors}}
+
+</table>

@@ -18,8 +18,10 @@ router.post('/cart', createCart)
 router.get('/cart/:cartId', getCart)
 // update cart
 router.put('/cart/:cartId', updateCart)
-// modify product quantity - returns current cart contents
-router.post('/cart/:cartId/product/:productId', cartProduct)
+// create a new cart product entry
+router.post('/cart/:cartId/cartProduct', cartProduct)
+// modify an existing cart product
+router.put('/cart/:cartId/cartProduct/:cartProductId', cartProduct)
 // create order for cart
 router.post('/cart/:cartId/order', createOrder)
 
@@ -29,9 +31,11 @@ module.exports = router
 
 function cartProduct (req, res, next) {
     // call controller function
-    return cartController.cartProduct(req)
+    var promise = req.params.cartProductId
+        ? cartController.updateCartProduct(req)
+        : cartController.createCartProduct(req)
     // handle response
-    .then(function (data) {
+    promise.then(function (data) {
         res.send(data)
     })
     // handle error

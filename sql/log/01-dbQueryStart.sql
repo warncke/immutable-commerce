@@ -1,6 +1,6 @@
 CREATE TABLE `dbQueryStart` (
   `dbQueryStartId` binary(16) NOT NULL,
-  `requestId` binary(16) NOT NULL,
+  `requestId` binary(16) DEFAULT NULL,
   `moduleCallId` binary(16) DEFAULT NULL,
   `dbConnectionId` binary(16) NOT NULL,
   `dbQueryId` binary(16) NOT NULL,

@@ -14,6 +14,7 @@ var path = require('path')
 
 /* routes */
 var data = require('./routes/data')
+var error = require('./routes/error')
 var index = require('./routes/index')
 var request = require('./routes/request')
 var search = require('./routes/search')
@@ -41,6 +42,7 @@ app.use(cookieParser())
 
 /* set route handlers */
 app.use('/', data)
+app.use('/', error)
 app.use('/', index)
 app.use('/', request)
 app.use('/', search)

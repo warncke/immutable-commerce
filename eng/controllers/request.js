@@ -48,7 +48,6 @@ function getRequest (req) {
                 nonCallDbQueries.push(dbQuery)
             }
         }
-        console.log(dbQueries)
         // return request data
         return {
             calls: calls,

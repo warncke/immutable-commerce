@@ -142,10 +142,24 @@ function getRequests (args) {
     ).then(function (res) {
         // create short versions of ids for display
         for (var i=0; i < res.length; i++) {
+            var record = res[i]
             // create a 'Short' version of each key 8 chars long
-            truncateMulti(res[i], requestIdKeys, 8)
+            truncateMulti(record, requestIdKeys, 8)
             // split date-time column into date and time
-            splitDateMulti(res[i], requestDateTimeKeys)
+            splitDateMulti(record, requestDateTimeKeys)
+            // set a color for status code
+            if (record.statusCode === '200') {
+                record.statusColor = 'green'
+            }
+            else if (record.statusCode >= 400 && record.statusCode < 500) {
+                record.statusColor = 'orange'
+            }
+            else if (record.statusCode >= 500) {
+                record.statusColor = 'red'
+            }
+            else {
+                record.statusColor = 'black'
+            }
         }
 
         return res
