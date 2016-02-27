@@ -2,13 +2,6 @@
 
 module.exports = {
     connections: {
-        drupal: {
-            db: 'marketplace',
-            host: 'localhost',
-            numConnections: 10,
-            password: '',
-            user: 'root',
-        },
         immutable: {
             db: 'immutable',
             host: 'localhost',
