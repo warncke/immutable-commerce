@@ -2,6 +2,7 @@
 
 /* application libraries */
 var dbQueryModel = require('../models/db-query')
+var httpRequestModel = require('../models/http-request')
 var moduleCallModel = require('../models/module-call')
 var notFound = require('../../lib/not-found')
 var requestModel = require('../models/request')
@@ -23,36 +24,36 @@ function getRequest (req) {
     var dbQueryPromise = dbQueryModel.getDbQueriesByRequestId({
         requestId: req.params.requestId,
     })
+    var httpRequestPromise = httpRequestModel.getHttpRequestsByRequestId({
+        requestId: req.params.requestId,
+    })
     var requestPromise = requestModel.getRequestById({
         requestId: req.params.requestId,
     })
     var moduleCallPromise = moduleCallModel.getModuleCallsByRequestId({
         requestId: req.params.requestId,
     })
-
-    return Promise.all([dbQueryPromise, requestPromise, moduleCallPromise]).then(function (res) {
+    // wait for all data to be loaded
+    return Promise.all([
+        dbQueryPromise,
+        httpRequestPromise,
+        requestPromise,
+        moduleCallPromise,
+    // build request data
+    ]).then(function (res) {
         var dbQueries = res[0]
-        var request = res[1]
-        var calls = res[2]
+        var httpRequests = res[1]
+        var request = res[2]
+        var calls = res[3]
         // request id not found
         if (!request) {
             return notFound()
-        }
-        // list of db queries that do not belong to any call
-        var nonCallDbQueries = []
-        // merge db queries with calls
-        for (var i=0; i < dbQueries.length; i++) {
-            var dbQuery = dbQueries[i]
-            // attempt to merge db query to call
-            if (!mergeQueryToCall(calls, dbQuery)) {
-                nonCallDbQueries.push(dbQuery)
-            }
         }
         // return request data
         return {
             calls: calls,
             dbQueries: dbQueries,
-            nonCallDbQueries: nonCallDbQueries,
+            httpRequests: httpRequests,
             requestId: req.params.requestId,
             requests: [request],
         }

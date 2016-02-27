@@ -330,7 +330,7 @@ function startTests() {
         return
     }
     // recall after time out
-    setTimeout(startTests, getRandom(2,10))
+    setTimeout(startTests, getRandom(10,50))
 }
 
 function validateTestPlan (cartId, cookieJar, testPlan, cartProductIds) {

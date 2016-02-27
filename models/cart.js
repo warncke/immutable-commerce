@@ -34,8 +34,8 @@ function createCart (args) {
     var cart = {
         originalCartId: args.originalCartId,
         parentCartId: args.parentCartId,
-        sessionId: args.session.data.sessionId,
-        cartCreateTime: args.session.req.requestTimestamp,
+        sessionId: args.session.originalSessionId,
+        cartCreateTime: args.session.requestTimestamp,
     }
     // store cart data if passed and valid
     if (isObject(args.cartData)) {
@@ -59,9 +59,7 @@ function createCart (args) {
         args.session
     ).then(function () {
         // deserialize cartData
-        cart = unpackCartData(cart)
-
-        return cart
+        return unpackCartData(cart)
     })
 }
 
@@ -79,7 +77,7 @@ function getCartById (args) {
         'SELECT HEX(cartId) AS cartId, HEX(originalCartId) AS originalCartId, HEX(parentCartId) AS parentCartId, HEX(sessionId) AS sessionId, cartData, cartCreateTime FROM cart WHERE cartId = UNHEX(:cartId) AND cartCreateTime <= :requestTimestamp',
         {
             cartId: args.cartId,
-            requestTimestamp: args.session.req.requestTimestamp
+            requestTimestamp: args.session.requestTimestamp
         },
         undefined,
         args.session
@@ -124,11 +122,10 @@ function getMostRecentCartByOriginalCartId (args) {
 function getMostRecentCartBySessionId (args) {
     return db('immutable').query(
         // select the most recent cart associated with the session
-        'SELECT HEX(cartId) AS cartId, HEX(originalCartId) AS originalCartId, HEX(parentCartId) AS parentCartId, HEX(sessionId) AS sessionId, cartData, cartCreateTime FROM cart c WHERE c.sessionId IN( UNHEX(:originalSessionId), UNHEX(:sessionId) ) AND cartCreateTime <= :requestTimestamp ORDER BY cartCreateTime DESC LIMIT 1',
+        'SELECT HEX(cartId) AS cartId, HEX(originalCartId) AS originalCartId, HEX(parentCartId) AS parentCartId, HEX(sessionId) AS sessionId, cartData, cartCreateTime FROM cart c WHERE c.sessionId = UNHEX(:sessionId) AND cartCreateTime <= :requestTimestamp ORDER BY cartCreateTime DESC LIMIT 1',
         {
-            originalSessionId: args.session.data.originalSessionId,
-            requestTimestamp: args.session.req.requestTimestamp,
-            sessionId: args.session.data.sessionId,
+            requestTimestamp: args.session.requestTimestamp,
+            sessionId: args.session.originalSessionId,
         },
         undefined,
         args.session

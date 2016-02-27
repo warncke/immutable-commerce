@@ -30,7 +30,7 @@ function createOrder (args) {
     // get id without original order id or timestamp since there is only one order per cart
     order.orderId = stableId(order)
     order.originalOrderId = args.originalOrderId
-    order.orderCreateTime = args.session.req.requestTimestamp
+    order.orderCreateTime = args.session.requestTimestamp
     // insert order
     return db('immutable').query(
         'INSERT INTO `order` VALUES(UNHEX(:orderId), UNHEX(:originalOrderId), UNHEX(:accountId), UNHEX(:cartId), :orderCreateTime)',
@@ -56,7 +56,7 @@ function getOrderByCartId (args) {
         'SELECT HEX(accountId) AS accountId, HEX(cartId) AS cartId, HEX(orderId) AS orderId, HEX(originalOrderId) AS originalOrderId, orderCreateTime FROM `order` WHERE cartId = UNHEX(:cartId) AND orderCreateTime <= :requestTimestamp',
         {
             cartId: args.cartId,
-            requestTimestamp: args.session.req.requestTimestamp
+            requestTimestamp: args.session.requestTimestamp
         },
         undefined,
         args.session

@@ -1,14 +1,21 @@
 'use strict'
 
+/* npm libraries */
+var knex = require('knex')({client: 'mysql'});
+
 /* application libraries */
 var db = require('../lib/database')
+var idInQuery = require('../lib/id-in-query')
 var immutable = require('../lib/immutable')
+var jsonParseMulti = require('../lib/json-parse-multi')
 var stableId = require('../lib/stable-id')
 var stringify = require('json-stable-stringify')
 
 /* public functions */
 var productModel = module.exports = immutable.model('Product', {
     createProduct: createProduct,
+    deleteProduct: deleteProduct,
+    publishProduct: publishProduct,
     getProducts: getProducts,
     getProductById: getProductById,
     getProductsById: getProductsById,
@@ -18,6 +25,7 @@ var productModel = module.exports = immutable.model('Product', {
  * @function createProduct
  *
  * @param {string} originalProductId - hex id of original product
+ * @param {string} parentProductId - hex id of original product
  * @param {object} productData - product data
  * @param {object} session - request session
  * 
@@ -27,32 +35,83 @@ function createProduct (args) {
     // build product data
     var product = {
         originalProductId: args.originalProductId,
+        parentProductId: args.parentProductId,
     }
     // set product data as JSON encoded string
     try {
         product.productData = stringify(args.productData)
     }
     catch (ex) {
-        product.productData = '{}'
+        // leave productData null on invalid JSON
     }
-    // create product data id from product data alone - there may be
-    // multiple instances of the same product data over time if a
-    // product is deleted and readded so the productId itself has
-    // to be based on both productData and productCreateTime but there
-    // also needs to be a way to find products only by their data
-    product.productDataId = stableId(product)
-    product.productCreateTime = args.session.req.requestTimestamp
-    // create product id based on data, original product id, and create time
+    // create id for data so that identical products can be linked across publish/delete
+    product.productDataId = stableId(product.productData)
+    product.productCreateTime = args.session.requestTimestamp
+    product.sessionId = args.session.originalSessionId
+    // create product id
     product.productId = stableId(product)
+    // use product id for original product id if this is a new product
+    if (!product.originalProductId) {
+        product.originalProductId = product.productId
+    }
     // insert product
     return db('immutable').query(
-        'INSERT INTO `product` VALUES(UNHEX(:productId), UNHEX(:productDataId), UNHEX(:originalProductId), :productData, :productCreateTime)',
+        'INSERT INTO `product` VALUES(UNHEX(:productId), UNHEX(:originalProductId), UNHEX(:parentProductId), UNHEX(:productDataId), UNHEX(:sessionId), :productData, :productCreateTime)',
         product,
         undefined,
         args.session
     ).then(function () {
         // return product data on successful insert
         return product
+    })
+}
+
+/**
+ * @function deleteProduct
+ *
+ * @param {string} productId - hex id of product
+ * @param {object} session - request session
+ *
+ * @returns {Promise}
+ */
+function deleteProduct (args) {
+    // insert product delete
+    return db('immutable').query(
+        'INSERT INTO `productDelete` VALUES(UNHEX(:productId), UNHEX(:sessionId), :productDeleteCreateTime)',
+        {
+            productId: args.productId,
+            sessionId: args.session.originalSessionId,
+            productDeleteCreateTime: args.session.requestTimestamp,
+        },
+        undefined,
+        args.session
+    ).then(function (res) {
+        return res.info.affectedRows === '1' ? true : false
+    })
+}
+
+
+/**
+ * @function publishProduct
+ *
+ * @param {string} productId - hex id of product
+ * @param {object} session - request session
+ *
+ * @returns {Promise}
+ */
+function publishProduct (args) {
+    // insert product publish
+    return db('immutable').query(
+        'INSERT INTO `productPublish` VALUES(UNHEX(:productId), UNHEX(:sessionId), :productPublishCreateTime)',
+        {
+            productId: args.productId,
+            sessionId: args.session.originalSessionId,
+            productPublishCreateTime: args.session.requestTimestamp,
+        },
+        undefined,
+        args.session
+    ).then(function (res) {
+        return res.info.affectedRows === '1' ? true : false
     })
 }
 
@@ -65,17 +124,16 @@ function createProduct (args) {
  */
 function getProducts (args) {
     return db('immutable').query(
-        'SELECT HEX(p.productId) AS productId, HEX(p.productDataId) AS productDataId, HEX(p.originalProductId) AS originalProductId, p.productData, p.productCreateTime FROM product p LEFT JOIN productDelete pd ON p.productId = pd.productId WHERE p.productCreateTime <= :requestTimestamp AND ( pd.productDeleteTime IS NULL OR pd.productDeleteTime > :requestTimestamp )',
+        'SELECT HEX(p.productId) AS productId, HEX(p.originalProductId) AS originalProductId, HEX(p.parentProductId) AS parentProductId, HEX(p.productDataId) AS productDataId, p.productData, p.productCreateTime FROM product p JOIN productPublish pp ON p.productId = pp.productId LEFT JOIN productDelete pd ON p.productId = pd.productId WHERE p.productCreateTime <= :requestTimestamp AND pp.productPublishCreateTime <= :requestTimestamp AND ( pd.productDeleteCreateTime IS NULL OR pd.productDeleteCreateTime > :requestTimestamp )',
         {
-            requestTimestamp: args.session.req.requestTimestamp,
+            requestTimestamp: args.session.requestTimestamp,
         },
         undefined,
         args.session
     ).then(function (res) {
-        for (var i=0; i < res.length; i++) {
-            // convert product data to JSON
-            res[i].productData = JSON.parse(res[i].productData)
-        }
+        // parse product data
+        jsonParseMulti(res, 'productData')
+        // return modified response
         return res
     })
 }
@@ -90,18 +148,17 @@ function getProducts (args) {
  */
 function getProductById (args) {
     return db('immutable').query(
-        'SELECT HEX(p.productId) AS productId, HEX(p.productDataId) AS productDataId, HEX(p.originalProductId) AS originalProductId, p.productData, p.productCreateTime FROM product p LEFT JOIN productDelete pd ON p.productId = pd.productId WHERE p.productId = UNHEX(:productId) AND p.productCreateTime <= :requestTimestamp AND ( pd.productDeleteTime IS NULL OR pd.productDeleteTime > :requestTimestamp )',
+        'SELECT HEX(p.productId) AS productId, HEX(p.originalProductId) AS originalProductId, HEX(p.productDataId) AS productDataId, HEX(p.parentProductId) AS parentProductId, p.productData, p.productCreateTime FROM product p JOIN productPublish pp ON p.productId = pp.productId LEFT JOIN productDelete pd ON p.productId = pd.productId WHERE p.productId = UNHEX(:productId) AND p.productCreateTime <= :requestTimestamp AND pp.productPublishCreateTime <= :requestTimestamp AND ( pd.productDeleteCreateTime IS NULL OR pd.productDeleteCreateTime > :requestTimestamp )',
         {
             productId: args.productId,
-            requestTimestamp: args.session.req.requestTimestamp
+            requestTimestamp: args.session.requestTimestamp
         },
         undefined,
         args.session
     ).then(function (res) {
-        for (var i=0; i < res.length; i++) {
-            // convert product data to JSON
-            res[i].productData = JSON.parse(res[i].productData)
-        }
+        // parse product data
+        jsonParseMulti(res, 'productData')
+        // return product or undefined
         return res.length ? res[0] : undefined
     })
 }
@@ -115,19 +172,23 @@ function getProductById (args) {
  * @returns {Promise}
  */
 function getProductsById (args) {
-    var productPromises = []
-    // request all product ids
-    for (var i=0; i < args.productIds.length; i++) {
-        var productId = args.productIds[i]
-        // get product - this is dumb - will be replaced with more
-        // efficient version
-        productPromises.push(
-            productModel.getProductById({
-                productId: productId,
-                session: args.session,
-            })
-        )
+    // build in query for product ids - this validates inputs so output is safe
+    var productIdInQuery = idInQuery(args.productIds)
+    // no valid input
+    if (!productIdInQuery) {
+        return
     }
-    // wait for all products to be retrieved
-    return Promise.all(productPromises)
+    return db('immutable').unpreparedQuery(
+        'SELECT HEX(p.productId) AS productId, HEX(p.originalProductId) AS originalProductId, HEX(p.productDataId) AS productDataId, HEX(p.parentProductId) AS parentProductId, p.productData, p.productCreateTime FROM product p JOIN productPublish pp ON p.productId = pp.productId LEFT JOIN productDelete pd ON p.productId = pd.productId WHERE p.productCreateTime <= :requestTimestamp AND pp.productPublishCreateTime <= :requestTimestamp AND ( pd.productDeleteCreateTime IS NULL OR pd.productDeleteCreateTime > :requestTimestamp ) AND p.productId '+productIdInQuery,
+        {
+            requestTimestamp: args.session.requestTimestamp
+        },
+        undefined,
+        args.session
+    ).then(function (res) {
+        // parse product data
+        jsonParseMulti(res, 'productData')
+        // return products
+        return res
+    })
 }

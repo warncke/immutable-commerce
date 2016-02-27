@@ -32,7 +32,7 @@ function createCartProduct (args) {
         parentCartProductId: args.parentCartProductId,
         productId: args.productId,
         quantity: args.quantity,
-        cartProductCreateTime: args.session.req.requestTimestamp
+        cartProductCreateTime: args.session.requestTimestamp
     }
     // create id
     var cartProductId = cartProduct.cartProductId = stableId(cartProduct)
@@ -66,7 +66,7 @@ function getCartProductById (args) {
         'SELECT HEX(cartProductId) AS cartProductId, HEX(originalCartProductId) AS originalCartProductId, HEX(parentCartProductId) AS parentCartProductId, HEX(cartId) AS cartId, HEX(productId) AS productId, quantity, cartProductCreateTime FROM cartProduct WHERE cartProductId = UNHEX(:cartProductId) AND cartProductCreateTime <= :requestTimestamp',
         {
             cartProductId: args.cartProductId,
-            requestTimestamp: args.session.req.requestTimestamp
+            requestTimestamp: args.session.requestTimestamp
         },
         undefined,
         args.session
@@ -89,32 +89,12 @@ function getCartProductsByCartId (args) {
         'SELECT HEX(cartProductId) AS cartProductId, HEX(originalCartProductId) AS originalCartProductId, HEX(productId) AS productId, quantity FROM cartProduct WHERE cartId = UNHEX(:cartId) AND cartProductCreateTime <= :requestTimestamp ORDER BY cartProductCreateTime',
         {
             cartId: args.cartId,
-            requestTimestamp: args.session.req.requestTimestamp
+            requestTimestamp: args.session.requestTimestamp
         },
         undefined,
         args.session
     ).then(function (res) {
-        var products = {}
-        // build cart product data, grouping by cart product id, summing quantity,
-        // and selecting the most recent cart product id
-        for (var i = 0; i < res.length; i++) {
-            var product = res[i]
-            // convert quantity to integer
-            product.quantity = parseInt(product.quantity)
-            // cart product entry exists
-            if (products[product.originalCartProductId]) {
-                // sum quantity
-                products[product.originalCartProductId].quantity += product.quantity
-                // use the most recent cart product id
-                products[product.originalCartProductId].cartProductId = product.cartProductId
-            }
-            // create new cart product entry
-            else {
-                products[product.originalCartProductId] = product
-            }
-        }
-        // return product summary data
-        return products
+        return buildCartProductData(res)
     })
 }
 
@@ -132,7 +112,7 @@ function getCartProductsTotalQuantityByCartId (args) {
         'SELECT SUM(quantity) AS quantity FROM cartProduct WHERE cartId = UNHEX(:cartId) AND cartProductCreateTime <= :requestTimestamp',
         {
             cartId: args.cartId,
-            requestTimestamp: args.session.req.requestTimestamp
+            requestTimestamp: args.session.requestTimestamp
         },
         undefined,
         args.session
@@ -161,4 +141,37 @@ function getMostRecentCartProductByOriginalCartProductId (args) {
     ).then(function (res) {
         return res.length ? res[0] : undefined
     })
+}
+
+/* private functions */
+
+/**
+ * @function buildCartProductData
+ * 
+ * @param {array} res - database response object
+ *
+ * @returns {object} cart product data
+ */
+function buildCartProductData (res) {
+    var products = {}
+    // build cart product data, grouping by cart product id, summing quantity,
+    // and selecting the most recent cart product id
+    for (var i = 0; i < res.length; i++) {
+        var product = res[i]
+        // convert quantity to integer
+        product.quantity = parseInt(product.quantity)
+        // cart product entry exists
+        if (products[product.originalCartProductId]) {
+            // sum quantity
+            products[product.originalCartProductId].quantity += product.quantity
+            // use the most recent cart product id
+            products[product.originalCartProductId].cartProductId = product.cartProductId
+        }
+        // create new cart product entry
+        else {
+            products[product.originalCartProductId] = product
+        }
+    }
+    // return product summary data
+    return products
 }

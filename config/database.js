@@ -23,5 +23,12 @@ module.exports = {
             password: 'immutable',
             user: 'immutable',
         },
+        logEng: {
+            db: 'log',
+            host: 'localhost',
+            numConnections: 10,
+            password: 'immutable',
+            user: 'eng',
+        },
     },
 }

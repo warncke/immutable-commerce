@@ -5,6 +5,7 @@ var express = require('express')
 var router = express.Router()
 
 /* application libraries */
+var argsFromReq = require('../lib/args-from-req')
 var immutable = require('../lib/immutable')
 var orderController = require('../controllers/order')
 
@@ -20,8 +21,9 @@ module.exports = router
 /* route handlers */
 
 function getOrders (req, res, next) {
+    var args = argsFromReq(req)
     // call controller function
-    return orderController.getOrders(req)
+    return orderController.getOrders(args)
     // handle response
     .then(function (data) {
         res.send(data)
@@ -33,8 +35,9 @@ function getOrders (req, res, next) {
 }
 
 function getOrder (req, res, next) {
+    var args = argsFromReq(req)
     // call controller function
-    return orderController.getOrder(req)
+    return orderController.getOrder(args)
     // handle response
     .then(function (data) {
         res.send(data)

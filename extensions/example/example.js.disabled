@@ -1,0 +1,52 @@
+'use strict'
+
+/* npm libraries */
+
+/* application libraries */
+var immutable = require('../../lib/immutable')
+
+/* public functions */
+var example = immutable.extension('Example', {
+    after: after,
+    afterDetach: afterDetach,
+    before: before,
+    beforeAfter: beforeAfter,
+    beforeDetach: beforeDetach,
+})
+
+/* bind extensions */
+immutable.after('CartController.getCartById', example.after)
+immutable.afterDetach('CartController.getCartById', example.afterDetach)
+immutable.before('CartController.getCartById', example.before)
+immutable.beforeDetach('CartController.getCartById', example.beforeDetach)
+immutable.before('ExampleExtension.after', example.beforeAfter)
+
+/* public functions */
+
+function after (args) {
+    console.log("after")
+
+    return {
+        "foo": "bar",
+    }
+}
+
+function afterDetach (args) {
+    console.log("afterDetach")
+}
+
+function before (args) {
+    console.log("before")
+}
+
+function beforeAfter (args) {
+    console.log("before after")
+
+    return {
+        "XXX": "YYY"
+    }
+}
+
+function beforeDetach (args) {
+    console.log("beforeDetach")
+}

@@ -1,0 +1,30 @@
+<table>
+    <tr>
+        <th>Call Id</th>
+        <th>Request Id</th>
+        <th>Method</th>
+        <th>Status</th>
+        <th>Url</th>
+        <th>Start</th>
+        <th>Time</th>
+        <th>Error Id</th>
+        <th>Header Id</th>
+        <th>Body Id</th>
+    </tr>
+
+    {{#httpRequests}}
+    <tr>
+        <td class="center">{{moduleCallIdShort}}</td>
+        <td class="center"><a href="/data/{{httpRequestOptionsId}}">{{httpRequestOptionsIdShort}}</a></td>
+        <td class="center">{{httpRequestMethod}}</td>
+        <td class="center">{{httpResponseStatusCode}}</td>
+        <td class="center">{{httpRequestUrl}}</td>
+        <td class="center">{{httpRequestCreateTimeTime}}</td>
+        <td class="center">{{requestTimeUs}}&micro;s</td>
+        <td class="center"><a href="/data/{{httpRequestErrorId}}">{{httpRequestErrorIdShort}}</a></td>
+        <td class="center"><a href="/data/{{httpResponseHeaderId}}">{{httpResponseHeaderIdShort}}</a></td>
+        <td class="center"><a href="/data/{{httpResponseBodyId}}">{{httpResponseBodyIdShort}}</a></td>
+    </tr>
+    {{/httpRequests}}
+
+</table>

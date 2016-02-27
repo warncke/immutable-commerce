@@ -5,23 +5,19 @@ var express = require('express')
 var router = express.Router()
 
 /* application libraries */
+var argsFromReq = require('../lib/args-from-req')
 var cartController = require('../controllers/cart')
-var immutable = require('../lib/immutable')
 
 /* routes */
 
 // get most recent active cart for session or create new cart
-router.get('/cart', getCart)
+router.get('/cart', getCartBySessionId)
 // always create new cart
 router.post('/cart', createCart)
 // get specific cart by id
-router.get('/cart/:cartId', getCart)
+router.get('/cart/:cartId', getCartById)
 // update cart
 router.put('/cart/:cartId', updateCart)
-// create a new cart product entry
-router.post('/cart/:cartId/cartProduct', cartProduct)
-// modify an existing cart product
-router.put('/cart/:cartId/cartProduct/:cartProductId', cartProduct)
 // create order for cart
 router.post('/cart/:cartId/order', createOrder)
 
@@ -29,24 +25,10 @@ module.exports = router
 
 /* route handlers */
 
-function cartProduct (req, res, next) {
-    // call controller function
-    var promise = req.params.cartProductId
-        ? cartController.updateCartProduct(req)
-        : cartController.createCartProduct(req)
-    // handle response
-    promise.then(function (data) {
-        res.send(data)
-    })
-    // handle error
-    .catch(function (err) {
-        next(err)
-    })
-}
-
 function createCart (req, res, next) {
+    var args = argsFromReq(req)
     // call controller function
-    return cartController.createCart(req)
+    return cartController.createCart(args)
     // handle response
     .then(function (data) {
         res.send(data)
@@ -58,8 +40,9 @@ function createCart (req, res, next) {
 }
 
 function createOrder (req, res, next) {
+    var args = argsFromReq(req)
     // call controller function
-    return cartController.createOrder(req)
+    return cartController.createOrder(args)
     // handle response
     .then(function (data) {
         res.send(data)
@@ -70,13 +53,26 @@ function createOrder (req, res, next) {
     })
 }
 
-function getCart (req, res, next) {
+function getCartById (req, res, next) {
+    var args = argsFromReq(req)
     // call controller function
-    var promise = req.params.cartId
-        ? cartController.getCartById(req)
-        : cartController.getCartBySessionId(req)
+    return cartController.getCartById(args)
     // handle response
-    promise.then(function (data) {
+    .then(function (data) {
+        res.send(data)
+    })
+    // handle error
+    .catch(function (err) {
+        next(err)
+    })
+}
+
+function getCartBySessionId (req, res, next) {
+    var args = argsFromReq(req)
+    // call controller function
+    return cartController.getCartBySessionId(args)
+    // handle response
+    .then(function (data) {
         res.send(data)
     })
     // handle error
@@ -86,8 +82,9 @@ function getCart (req, res, next) {
 }
 
 function updateCart (req, res, next) {
+    var args = argsFromReq(req)
     // call controller function
-    return cartController.updateCart(req)
+    return cartController.updateCart(args)
     // handle response
     .then(function (data) {
         res.send(data)

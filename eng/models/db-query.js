@@ -15,8 +15,8 @@ var dbQueryModel = module.exports = {
 
 /* private data constants */
 var dbQueryTimeKeys = [
-    'dbQueryStartCreateTime',
-    'dbQueryFinishCreateTime',
+    'dbQueryCreateTime',
+    'dbResponseCreateTime',
 ]
 
 var dbQueryIdKeys = [
@@ -24,30 +24,30 @@ var dbQueryIdKeys = [
     'dbQueryId',
     'dbQueryParamsId',
     'dbQueryOptionsId',
-    'dbQueryResponseId',
+    'dbQueryStringId',
+    'dbResponseId',
     'moduleCallId',
 ]
 
 function getDbQueriesByRequestId (args) {
     // build query
     var query = knex.select([
-        knex.raw('HEX(dbQueryStart.dbQueryStartId) AS dbQueryStartId'),
+        knex.raw('HEX(dbQuery.dbQueryId) AS dbQueryId'),
         knex.raw('HEX(requestId) AS requestId'),
         knex.raw('HEX(moduleCallId) AS moduleCallId'),
         knex.raw('HEX(dbConnectionId) AS dbConnectionId'),
-        knex.raw('HEX(dbQueryId) AS dbQueryId'),
+        knex.raw('HEX(dbQueryStringId) AS dbQueryStringId'),
         knex.raw('HEX(dbQueryParamsId) AS dbQueryParamsId'),
         knex.raw('HEX(dbQueryOptionsId) AS dbQueryOptionsId'),
-        knex.raw('HEX(dbQueryResponseId) AS dbQueryResponseId'),
-        'dbQueryStartCreateTime',
-        'dbQueryFinishCreateTime',
-        knex.raw('TIMESTAMPDIFF(MICROSECOND, dbQueryStartCreateTime, dbQueryFinishCreateTime) AS queryTimeUs'),
+        knex.raw('HEX(dbResponseId) AS dbResponseId'),
+        'dbQueryCreateTime',
+        'dbResponseCreateTime',
+        knex.raw('TIMESTAMPDIFF(MICROSECOND, dbQueryCreateTime, dbResponseCreateTime) AS queryTimeUs'),
     ])
-    .from('dbQueryStart')
-    .leftJoin('dbQueryFinish', 'dbQueryStart.dbQueryStartId', 'dbQueryFinish.dbQueryStartId')
+    .from('dbQuery')
+    .leftJoin('dbResponse', 'dbQuery.dbQueryId', 'dbResponse.dbQueryId')
     .where('requestId', knex.raw('UNHEX(?)', args.requestId))
-    .orderBy('dbQueryStartCreateTime')
-    console.log(query.toString())
+    .orderBy('dbQueryCreateTime')
     // query db queries
     return db('log').query(
         query.toString(),

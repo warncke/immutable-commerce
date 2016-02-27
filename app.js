@@ -18,9 +18,13 @@ var session = require('./lib/session')
 
 /* routes */
 var cart = require('./routes/cart')
+var cartProduct = require('./routes/cart-product')
+var favorite = require('./routes/favorite')
 var index = require('./routes/index')
 var order = require('./routes/order')
 var product = require('./routes/product')
+var productOption = require('./routes/product-option')
+var rpc = require('./routes/rpc')
 
 /* load extensions */
 require('require-all')({
@@ -43,7 +47,7 @@ app.use(cookieParser())
 // capture and optionally set the start time of the program execution 
 // all queries are executed within the boundaries set by this time
 app.use(function (req, res, next) {
-    req.requestTimestamp = moment().format('YYYY-MM-DD HH:mm:ss.SSSSSS')
+    req.requestTimestamp = microTimestamp()
     next()
 })
 
@@ -56,9 +60,13 @@ app.use(responseLogger)
 
 // set route handlers
 app.use('/', cart)
+app.use('/', cartProduct)
+app.use('/', favorite)
 app.use('/', index)
 app.use('/', order)
 app.use('/', product)
+app.use('/', productOption)
+app.use('/', rpc)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -82,7 +90,7 @@ app.use(function(err, req, res, next) {
     // send error message for all others
     else {
         res.send({
-            message: err.message,
+            error: err.message,
         })
     }
 })

@@ -23,13 +23,13 @@ function createFavorite (args) {
     // build favorite data
     var favorite = {
         accountId: args.accountId,
-        favoriteCreateTime: args.session.req.requestTimestamp,
+        favoriteCreateTime: args.session.requestTimestamp,
         productId: args.productId,
         toggle: 1,
     }
     // insert favorite
     return db('immutable').query(
-        'INSERT INTO favorite VALUES(:accountId, :productId, :toggle, :favoriteCreateTime)',
+        'INSERT INTO favorite VALUES(UNHEX(:accountId), UNHEX(:productId), :toggle, :favoriteCreateTime)',
         favorite,
         undefined,
         args.session
@@ -50,12 +50,33 @@ function createFavorite (args) {
 function getFavorites (args) {
     // select favorites by account id
     return db('immutable').query(
-        'SELECT HEX(productId), SUM(toggle) % 2 AS toggle FROM favorite WHERE accountId = UNHEX(:accountId) AND favoriteCreateTime <= :requestTimestamp',
+        'SELECT HEX(productId) AS productId, SUM(toggle) % 2 AS toggle FROM favorite WHERE accountId = UNHEX(:accountId) AND favoriteCreateTime <= :requestTimestamp GROUP BY accountId, productId',
         {
             accountId: args.accountId,
-            requestTimestamp: args.session.req.requestTimestamp
+            requestTimestamp: args.session.requestTimestamp
         },
         undefined,
         args.session
-    )
+    ).then(function (res) {
+        return buildFavorites(res)
+    })
+}
+
+/**
+ * @function buildFavorites
+ *
+ * @param {array} res - database response
+ *
+ * @returns {object} favorites
+ */
+function buildFavorites (res) {
+    // map of favorite product ids and current favorite status
+    var favorites = {}
+    // iterate over favorite entries
+    for (var i=0; i < res.length; i++) {
+        var favorite = res[i]
+        // convert database value of 0|1 to bool
+        favorites[favorite.productId] = favorite.toggle === '1' ? true : false
+    }
+    return favorites
 }
