@@ -1,4 +1,6 @@
 node_modules
-extensions
+config/freshrealm.js
+config/vessel-load.js
+extensions/vessel-load
+extensions/freshrealm
 misc
-config
