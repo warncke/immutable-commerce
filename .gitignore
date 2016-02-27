@@ -1,6 +1,7 @@
 node_modules
 config/freshrealm.js
 config/vessel-load.js
+config/database.js
 extensions/vessel-load
 extensions/freshrealm
 misc
