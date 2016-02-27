@@ -16,6 +16,7 @@ var stringify = require('json-stable-stringify')
 /* application libraries */
 
 var productModel = require('../models/product')
+var session = require('../lib/system-session')
 
 /* CLI setup */
 
@@ -26,6 +27,7 @@ var cli = commandLineArgs([
     { name: "concurrent", alias: "c", type: Number, defaultValue: 500 },
     { name: "help", type: Boolean, defaultValue: false },
     { name: "number", alias: "n", type: Number, defaultValue: 1000 },
+    { name: "numProducts", type: Number, defaultValue: 1000 },
 ])
 
 var options = cli.parse()
@@ -424,6 +426,7 @@ function printHelp () {
     console.log("\t--baseUrl\t[http://marketplace.dev:9077]")
     console.log("\t--concurrent\t[1000]\t\tnumber of tests to run concurrently")
     console.log("\t--number\t[1000]\t\ttotal number of tests to run")
+    console.log("\t--numProducts\t[1000]\t\tminimum number of products to create")
     console.log("\n")
 }
 
@@ -461,6 +464,38 @@ function printStatus () {
 }
 
 /* data generation functions */
+
+function createProducts (numProductsCreate) {
+    // return unless products to create
+    if (!(numProductsCreate > 0)) {
+        return
+    }
+    // list of promises to be resolved once all products created
+    var createProductPromises = []
+    // create products
+    for (var i=0; i < numProductsCreate; i++) {
+        // create product
+        var createProductPromise = productModel.createProduct({
+            productData: {
+                name: 'DUMMY PRODUCT '+i+' '+session.requestTimestamp,
+            },
+            session: session,
+        })
+        .then(function (product) {
+            // add product id to global list to be used for testing
+            products.push(product.productId)
+            // publish product
+            return productModel.publishProduct({
+                productId: product.productId,
+                session: session,
+            })
+        })
+        // add promise to list
+        createProductPromises.push(createProductPromise)
+    }
+    // wait for all promises to complete
+    return Promise.all(createProductPromises)
+}
 
 function createTestPlan () {
     var testPlan = {}
@@ -509,11 +544,21 @@ function createTestPlans () {
 }
 
 function generateProductIds () {
-    return get({}, '/product').then(function (res) {
+    // try to get already loaded products
+    return get({}, '/product')
+    // save product ids
+    .then(function (res) {
         // add product ids to global list for use in tests
         for (var i=0; i < res.length; i++) {
             products.push(res[i].productId)
         }
+    })
+    // if too few products are loaded then create some dummy ones
+    .then(function () {
+        // number of products to create
+        var numProductsCreate = options.numProducts - products.length
+        // create products
+        return createProducts(numProductsCreate)
     })
 }
 
