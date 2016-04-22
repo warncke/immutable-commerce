@@ -1,0 +1,20 @@
+'use strict'
+
+{{#npmLibraries.length}}
+/* npm libraries */
+{{#npmLibraries}}
+var {{variable}} = require('{{{library}}}')
+{{/npmLibraries}}
+
+{{/npmLibraries.length}}
+{{#applicationLibraries.length}}
+/* application libraries */
+{{#applicationLibraries}}
+var {{variable}} = require('{{{library}}}')
+{{/applicationLibraries}}
+
+{{/applicationLibraries.length}}
+/* public functions */
+module.exports = immutable.controller('{{controllerName}}', {
+
+})

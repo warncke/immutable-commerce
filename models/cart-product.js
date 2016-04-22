@@ -3,7 +3,7 @@
 /* application libraries */
 var db = require('../lib/database')
 var immutable = require('../lib/immutable')
-var stableId = require('../lib/stable-id.js')
+var setId = require('../lib/set-id.js')
 
 /* public functions */
 module.exports = immutable.model('CartProduct', {
@@ -21,7 +21,7 @@ module.exports = immutable.model('CartProduct', {
  * @param {string} productId - hex id of product being modified
  * @param {integer} quantity - quantity of modification (positive or negative)
  * @param {object} session - request session
- * 
+ *
  * @returns {Promise}
  */
 function createCartProduct (args) {
@@ -29,20 +29,17 @@ function createCartProduct (args) {
     var cartProduct = {
         cartId: args.cartId,
         originalCartProductId: args.originalCartProductId,
+        originalProductId: args.originalProductId,
         parentCartProductId: args.parentCartProductId,
         productId: args.productId,
         quantity: args.quantity,
         cartProductCreateTime: args.session.requestTimestamp
     }
     // create id
-    var cartProductId = cartProduct.cartProductId = stableId(cartProduct)
-    // this is original if it is not a modification
-    if (!cartProduct.originalCartProductId) {
-        cartProduct.originalCartProductId = cartProductId
-    }
+    setId(cartProduct, 'cartProductId', 'originalCartProductId')
     // insert part product
     return db('immutable').query(
-        'INSERT INTO cartProduct VALUES(UNHEX(:cartProductId), UNHEX(:originalCartProductId), UNHEX(:parentCartProductId), UNHEX(:cartId), UNHEX(:productId), :quantity, :cartProductCreateTime)',
+        'INSERT INTO cartProduct VALUES(UNHEX(:cartProductId), UNHEX(:originalCartProductId), UNHEX(:parentCartProductId), UNHEX(:cartId), UNHEX(:productId), UNHEX(:originalProductId), :quantity, :cartProductCreateTime)',
         cartProduct,
         undefined,
         args.session
@@ -57,13 +54,13 @@ function createCartProduct (args) {
  *
  * @param {string} cartProductId- hex id of cart product
  * @param {object} session - request session
- * 
+ *
  * @returns {Promise}
  */
 function getCartProductById (args) {
     // select cart product by id
     return db('immutable').query(
-        'SELECT HEX(cartProductId) AS cartProductId, HEX(originalCartProductId) AS originalCartProductId, HEX(parentCartProductId) AS parentCartProductId, HEX(cartId) AS cartId, HEX(productId) AS productId, quantity, cartProductCreateTime FROM cartProduct WHERE cartProductId = UNHEX(:cartProductId) AND cartProductCreateTime <= :requestTimestamp',
+        'SELECT HEX(cartProductId) AS cartProductId, HEX(originalCartProductId) AS originalCartProductId, HEX(parentCartProductId) AS parentCartProductId, HEX(cartId) AS cartId, HEX(productId) AS productId, HEX(originalProductId) AS originalProductId, quantity, cartProductCreateTime FROM cartProduct WHERE cartProductId = UNHEX(:cartProductId) AND cartProductCreateTime <= :requestTimestamp',
         {
             cartProductId: args.cartProductId,
             requestTimestamp: args.session.requestTimestamp
@@ -80,13 +77,13 @@ function getCartProductById (args) {
  *
  * @param {string} cartId - hex id of parent cart
  * @param {object} session - request session
- * 
+ *
  * @returns {Promise}
  */
 function getCartProductsByCartId (args) {
     // select all cart product entries
     return db('immutable').query(
-        'SELECT HEX(cartProductId) AS cartProductId, HEX(originalCartProductId) AS originalCartProductId, HEX(productId) AS productId, quantity FROM cartProduct WHERE cartId = UNHEX(:cartId) AND cartProductCreateTime <= :requestTimestamp ORDER BY cartProductCreateTime',
+        'SELECT HEX(cartProductId) AS cartProductId, HEX(originalCartProductId) AS originalCartProductId, HEX(productId) AS productId, HEX(originalProductId) AS originalProductId, quantity, cartProductCreateTime FROM cartProduct WHERE cartId = UNHEX(:cartId) AND cartProductCreateTime <= :requestTimestamp ORDER BY cartProductCreateTime',
         {
             cartId: args.cartId,
             requestTimestamp: args.session.requestTimestamp
@@ -103,7 +100,7 @@ function getCartProductsByCartId (args) {
  *
  * @param {string} cartId - hex id of parent cart
  * @param {object} session - request session
- * 
+ *
  * @returns {Promise}
  */
 function getCartProductsTotalQuantityByCartId (args) {
@@ -147,7 +144,7 @@ function getMostRecentCartProductByOriginalCartProductId (args) {
 
 /**
  * @function buildCartProductData
- * 
+ *
  * @param {array} res - database response object
  *
  * @returns {object} cart product data
@@ -162,6 +159,12 @@ function buildCartProductData (res) {
         product.quantity = parseInt(product.quantity)
         // cart product entry exists
         if (products[product.originalCartProductId]) {
+            // update lastUpdateTime
+            products[product.originalCartProductId].lastUpdateTime = product.cartProductCreateTime
+            // Update lastAddedTime
+            if (product.quantity > 0) {
+                products[product.originalCartProductId].lastAddedTime = product.cartProductCreateTime
+            }
             // sum quantity
             products[product.originalCartProductId].quantity += product.quantity
             // use the most recent cart product id
@@ -170,6 +173,9 @@ function buildCartProductData (res) {
         // create new cart product entry
         else {
             products[product.originalCartProductId] = product
+            products[product.originalCartProductId].createTime = product.cartProductCreateTime
+            products[product.originalCartProductId].lastUpdateTime = product.cartProductCreateTime
+            products[product.originalCartProductId].lastAddedTime = product.cartProductCreateTime
         }
     }
     // return product summary data

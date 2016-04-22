@@ -1,0 +1,69 @@
+'use strict'
+
+{{#npmLibraries.length}}
+/* npm libraries */
+{{#npmLibraries}}
+var {{variable}} = require('{{{library}}}')
+{{/npmLibraries}}
+
+{{/npmLibraries.length}}
+{{#applicationLibraries.length}}
+/* application libraries */
+{{#applicationLibraries}}
+var {{variable}} = require('{{{library}}}')
+{{/applicationLibraries}}
+
+{{/applicationLibraries.length}}
+/* public functions */
+module.exports = immutable.controller('{{modelName}}', {
+    {{create.name}}: {{create.name}},
+})
+
+/**
+ * @function create{{ucName}}
+ *
+ {{#create.params}}
+ {{=[[ ]]=}}
+ * @param {[[jsType]]} [[name]][[#desc]] - [[desc]][[/desc]]
+ [[={{ }}=]]
+ {{/create.params}}
+ *
+ * @returns {Promise}
+ */
+function create{{ucName}} (args) {
+    // build data
+    var {{name}}Data = {
+    {{#create.params}}
+        {{name}}: {{{value}}},
+    {{/create.params}}
+        {{primaryCreateTimeParam.name}}: args.session.requestTimestamp,
+        sessionId: args.session.sessionId,
+    }
+    // set ids
+    setId({{name}}Data, '{{primaryIdParam.name}}'{{#originalIdParam}}, '{{originalIdParam.name}}'{{/originalIdParam}})
+    // insert record
+    return db('{{name}}').query(`
+        INSERT INTO \`{{name}}\` VALUES(
+        {{#create.columns}}
+            {{insertSql}}
+        {{/create.columns}}
+        )`,
+        {{name}}Data,
+        undefined,
+        args.session
+    )
+    // success
+    .then(function () {
+        {{#create.dataParams.length}}
+        // parse JSON encoded data
+        jsonParseMulti({{name}}Data, {{{create.dataParamsStatement}}})
+        {{/create.dataParams.length}}
+        // return data
+        return {{name}}Data
+    })
+}
+{{#related.length}}
+{{#related}}
+{{>model-related}}
+{{/related}}
+{{/related.length}}

@@ -70,13 +70,8 @@ function createProductOption (req) {
             cartId: cartId,
             session: session,
         })
-        // get cart products
-        var cartProductsPromise = cartProductModel.getCartProductsByCartId({
-            cartId: cartId,
-            session: session,
-        })
         // add to promises
-        promises.push(cartPromise, orderPromise, cartProductsPromise)
+        promises.push(cartPromise, orderPromise)
     }
     // wait for all promises to resolve
     return Promise.all(promises)
@@ -86,6 +81,8 @@ function createProductOption (req) {
         cart = res[1]
         order = res[2]
         cartProducts = res[3]
+        // cart products will only be loaded if cart id was set
+        var cartProductsPromise
         // require product
         if (!product) {
             return badRequest('product not found')
@@ -97,9 +94,14 @@ function createProductOption (req) {
                 return notFound()
             }
             // cart does not belong to current session
-            if (cart.sessionId !== session.originalSessionId) {
+            if (cart.sessionId !== session.sessionId) {
                 return accessDenied()
             }
+            // get cart products
+            cartProductsPromise = cartProductModel.getCartProductsByCartId({
+                cartId: cart.originalCartId,
+                session: session,
+            })
         }
         // promises for inserts
         var promises = []
@@ -107,7 +109,8 @@ function createProductOption (req) {
         var sessionProductOptionPromise = sessionProductOptionModel.createSessionProductOption({
             optionName: optionName,
             optionValue: optionValue,
-            productId: productId,
+            originalProductId: product.originalProductId,
+            productId: product.productId,
             session: session,
         })
         // add to promises
@@ -119,7 +122,8 @@ function createProductOption (req) {
                 accountId: session.accountId,
                 optionName: optionName,
                 optionValue: optionValue,
-                productId: productId,
+                originalProductId: product.originalProductId,
+                productId: product.productId,
                 session: session,
             })
             // add to promises
@@ -127,32 +131,38 @@ function createProductOption (req) {
         }
         // if cart products were loaded then apply product options to any
         // cart product entries for product in cart
-        if (cartProducts) {
-            // get all cart product ids
-            var cartProductIds = Object.keys(cartProducts)
-            // iterate over cart products
-            for (var i=0; i < cartProductIds.length; i++) {
-                var cartProductId = cartProductIds[i]
-                var cartProduct = cartProducts[cartProductId]
-                // skip unless product id matches
-                if (cartProduct.productId !== productId) {
-                    continue
+        if (cartProductsPromise) {
+            return cartProductsPromise.then(function (cartProducts) {
+                // get all cart product ids
+                var cartProductIds = Object.keys(cartProducts)
+                // iterate over cart products
+                for (var i=0; i < cartProductIds.length; i++) {
+                    var cartProductId = cartProductIds[i]
+                    var cartProduct = cartProducts[cartProductId]
+                    // skip unless product id matches
+                    if (cartProduct.productId !== productId) {
+                        continue
+                    }
+                    // create product option entry for cart product
+                    var cartProductOptionPromise = cartProductOptionModel.createCartProductOption({
+                        cartId: cart.originalCartId,
+                        cartProductId: cartProduct.originalCartProductId,
+                        optionName: optionName,
+                        optionValue: optionValue,
+                        productId: productId,
+                        session: session,
+                    })
+                    // add to promises
+                    promises.push(cartProductOptionPromise)
                 }
-                // create product option entry for cart product
-                var cartProductOptionPromise = cartProductOptionModel.createCartProductOption({
-                    cartId: cartId,
-                    cartProductId: cartProductId,
-                    optionName: optionName,
-                    optionValue: optionValue,
-                    productId: productId,
-                    session: session,
-                })
-                // add to promises
-                promises.push(cartProductOptionPromise)
-            }
+                // wait for all inserts to complete
+                return Promise.all(promises)
+            })
         }
-        // wait for all inserts to complete
-        return Promise.all(promises)
+        else {
+            // wait for all inserts to complete
+            return Promise.all(promises)
+        }
     })
     // after all updates complete return current product options
     .then(function () {

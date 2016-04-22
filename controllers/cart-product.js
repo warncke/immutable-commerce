@@ -35,10 +35,10 @@ function createCartProduct (req) {
     var session = req.session
     // get input
     var cartId = req.params.cartId
-    var originalSessionId = session.data.originalSessionId
+    var sessionId = session.sessionId
     var productId = req.body.productId
     var quantity = parseInt(req.body.quantity)
-    var sessionId = session.data.sessionId
+    var sessionId = session.sessionId
     // require product id
     if (!productId) {
         return badRequest('productId required')
@@ -89,7 +89,7 @@ function createCartProduct (req) {
             return notFound()
         }
         // cart does not belong to current session
-        if (cart.sessionId !== sessionId && cart.sessionId !== originalSessionId) {
+        if (cart.sessionId !== sessionId && cart.sessionId !== sessionId) {
             return accessDenied()
         }
         // product not found
@@ -103,7 +103,8 @@ function createCartProduct (req) {
         // insert cart product modification
         return cartProductModel.createCartProduct({
             cartId: cart.originalCartId,
-            productId: productId,
+            originalProductId: product.originalProductId,
+            productId: product.productId,
             quantity: quantity,
             session: session,
         })
@@ -171,9 +172,9 @@ function updateCartProduct (req) {
     // get input
     var cartId = req.params.cartId
     var cartProductId = req.params.cartProductId
-    var originalSessionId = session.data.originalSessionId
+    var sessionId = session.sessionId
     var quantity = parseInt(req.body.quantity)
-    var sessionId = session.data.sessionId
+    var sessionId = session.sessionId
     // require number for quantity
     if (typeof quantity !== 'number') {
         return badRequest('Invalid quantity - integer required')
@@ -214,7 +215,7 @@ function updateCartProduct (req) {
             return notFound()
         }
         // cart does not belong to current session
-        if (cart.sessionId !== sessionId && cart.sessionId !== originalSessionId) {
+        if (cart.sessionId !== sessionId && cart.sessionId !== sessionId) {
             return accessDenied()
         }
         // cart product id not found
@@ -229,6 +230,7 @@ function updateCartProduct (req) {
         return cartProductModel.createCartProduct({
             cartId: cart.originalCartId,
             originalCartProductId: cartProduct.originalCartProductId,
+            originalProductId: cartProduct.originalProductId,
             parentCartProductId: cartProduct.cartProductId,
             productId: cartProduct.productId,
             quantity: quantity,

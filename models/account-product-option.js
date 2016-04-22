@@ -1,9 +1,6 @@
 'use strict'
 
-/* npm libraries */
-
 /* application libraries */
-
 var buildProductOptions = require('../lib/build-product-options')
 var db = require('../lib/database.js')
 var immutable = require('../lib/immutable')
@@ -17,21 +14,23 @@ module.exports = immutable.model('AccountProductOption', {
 /**
  * @function createAccountProductOption
  *
- * @param {string} productId - hex id of original cart
+ * @param {object} accountId - hex account id
  * @param {string} optionName
  * @param {string} optionValue
- * @param {object} account - request account
+ * @param {string} originalProductId - hex id of original product
+ * @param {string} productId - hex id of product
  * 
  * @returns {Promise}
  */
 function createAccountProductOption (args) {
     // insert product publish
     return db('immutable').query(
-        'INSERT INTO `accountProductOption` VALUES(UNHEX(:accountId), UNHEX(:productId), :optionName, :optionValue, :accountProductOptionCreateTime)',
+        'INSERT INTO `accountProductOption` VALUES(UNHEX(:accountId), UNHEX(:productId), UNHEX(:originalProductId), :optionName, :optionValue, :accountProductOptionCreateTime)',
         {
             accountId: args.accountId,
             optionName: args.optionName,
             optionValue: args.optionValue,
+            originalProductId: args.originalProductId,
             productId: args.productId,
             accountProductOptionCreateTime: args.session.requestTimestamp,
         },
@@ -53,7 +52,7 @@ function createAccountProductOption (args) {
 function getAccountProductOptions (args) {
     // get product options
     return db('immutable').query(
-        'SELECT HEX(accountId) AS accountId, HEX(productId) AS productId, optionName, optionValue, accountProductOptionCreateTime FROM accountProductOption WHERE accountId = UNHEX(:accountId) AND accountProductOptionCreateTime <= :accountProductOptionCreateTime ORDER BY accountProductOptionCreateTime',
+        'SELECT HEX(accountId) AS accountId, HEX(originalProductId) AS productId, optionName, optionValue, accountProductOptionCreateTime FROM accountProductOption WHERE accountId = UNHEX(:accountId) AND accountProductOptionCreateTime <= :accountProductOptionCreateTime ORDER BY accountProductOptionCreateTime',
         {
             accountId: args.accountId,
             accountProductOptionCreateTime: args.session.requestTimestamp,

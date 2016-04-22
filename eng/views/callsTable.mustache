@@ -9,10 +9,11 @@
         <th>Arguments</th>
         <th>Resolved</th>
         <th>Return</th>
+        <th>Run</th>
     </tr>
 
     {{#calls}}
-    <tr>
+    <tr class="call">
         <td class="center">{{moduleCallIdShort}}</td>
         <td class="center">{{moduleName}}</td>
         <td class="center">{{functionName}}</td>
@@ -21,7 +22,10 @@
         <td class="center"><a href="/data/{{stackId}}">{{stackIdShort}}</a></td>
         <td class="center"><a href="/data/{{argsId}}">{{argsIdShort}}</a></td>
         <td class="center">{{resolved}}</td>
-        <td class="center"><a href="/data/{{promiseDataId}}">{{promiseDataIdShort}}</a></td>
+        <td class="center"><a href="/data/{{moduleCallResolveDataId}}">{{moduleCallResolveDataIdShort}}</a></td>
+        <td class="center">
+            <a href="javascript:IMEC.executeCall('{{moduleName}}.{{functionName}}','{{moduleCallId}}', '{{argsId}}')">Run</a>
+        </td>
     </tr>
     {{/calls}}
 

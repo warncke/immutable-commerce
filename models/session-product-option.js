@@ -1,9 +1,6 @@
 'use strict'
 
-/* npm libraries */
-
 /* application libraries */
-
 var buildProductOptions = require('../lib/build-product-options')
 var db = require('../lib/database.js')
 var immutable = require('../lib/immutable')
@@ -17,9 +14,10 @@ module.exports = immutable.model('SessionProductOption', {
 /**
  * @function createSessionProductOption
  *
- * @param {string} productId - hex id of original cart
  * @param {string} optionName
  * @param {string} optionValue
+ * @param {string} originalProductId - hex id of original product
+ * @param {string} productId - hex id of product
  * @param {object} session - request session
  * 
  * @returns {Promise}
@@ -27,12 +25,13 @@ module.exports = immutable.model('SessionProductOption', {
 function createSessionProductOption (args) {
     // insert product publish
     return db('immutable').query(
-        'INSERT INTO `sessionProductOption` VALUES(UNHEX(:sessionId), UNHEX(:productId), :optionName, :optionValue, :sessionProductOptionCreateTime)',
+        'INSERT INTO `sessionProductOption` VALUES(UNHEX(:sessionId), UNHEX(:productId), UNHEX(:originalProductId), :optionName, :optionValue, :sessionProductOptionCreateTime)',
         {
             optionName: args.optionName,
             optionValue: args.optionValue,
+            originalProductId: args.originalProductId,
             productId: args.productId,
-            sessionId: args.session.originalSessionId,
+            sessionId: args.session.sessionId,
             sessionProductOptionCreateTime: args.session.requestTimestamp,
         },
         undefined,
@@ -53,9 +52,9 @@ function createSessionProductOption (args) {
 function getSessionProductOptions (args) {
     // get product options
     return db('immutable').query(
-        'SELECT HEX(sessionId) AS sessionId, HEX(productId) AS productId, optionName, optionValue, sessionProductOptionCreateTime FROM sessionProductOption WHERE sessionId = UNHEX(:sessionId) AND sessionProductOptionCreateTime <= :sessionProductOptionCreateTime ORDER BY sessionProductOptionCreateTime',
+        'SELECT HEX(sessionId) AS sessionId, HEX(originalProductId) AS productId, optionName, optionValue, sessionProductOptionCreateTime FROM sessionProductOption WHERE sessionId = UNHEX(:sessionId) AND sessionProductOptionCreateTime <= :sessionProductOptionCreateTime ORDER BY sessionProductOptionCreateTime',
         {
-            sessionId: args.session.originalSessionId,
+            sessionId: args.session.sessionId,
             sessionProductOptionCreateTime: args.session.requestTimestamp,
         },
         undefined,

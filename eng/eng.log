@@ -1,0 +1,39 @@
+[33m[nodemon] 1.9.1[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching: *.*[39m
+[32m[nodemon] starting `node bin/www`[39m
+[0mGET /data/94A53C4F45B7D8FE3331A85DD7472435 [32m200 [0m27.039 ms - 2079[0m
+[0mGET /css/immutable.css [32m200 [0m3.438 ms - 291[0m
+[0mGET /css/github.css [32m200 [0m4.389 ms - 1148[0m
+[0mGET /js/highlight.pack.js [32m200 [0m1.511 ms - 8829[0m
+[0mGET /favicon.ico [33m404 [0m5.859 ms - 368[0m
+[0mGET /data/24EBB5003F63FCF552837382D3046CD3 [32m200 [0m3.691 ms - 1607[0m
+[0mGET /css/immutable.css [32m200 [0m2.907 ms - 291[0m
+[0mGET /css/github.css [32m200 [0m3.820 ms - 1148[0m
+[0mGET /js/highlight.pack.js [32m200 [0m5.551 ms - 8829[0m
+[0mGET /data/A7EF0F63165FBE500848CCABF7BC4953 [32m200 [0m4.719 ms - 2057[0m
+[0mGET /js/highlight.pack.js [32m200 [0m1.551 ms - 8829[0m
+[0mGET /css/github.css [32m200 [0m5.843 ms - 1148[0m
+[0mGET /css/immutable.css [32m200 [0m11.067 ms - 291[0m
+[0mGET /data/E402D54FB01B464062D4CDBDD39365F6 [32m200 [0m5.616 ms - 916[0m
+[0mGET /css/immutable.css [32m200 [0m2.910 ms - 291[0m
+[0mGET /css/github.css [32m200 [0m3.290 ms - 1148[0m
+[0mGET /js/highlight.pack.js [32m200 [0m4.417 ms - 8829[0m
+[0mGET /data/DF96F0CFF716AC00C8EA10281501EB57 [32m200 [0m7.288 ms - 9803[0m
+[0mGET /css/immutable.css [32m200 [0m4.120 ms - 291[0m
+[0mGET /css/github.css [32m200 [0m3.588 ms - 1148[0m
+[0mGET /js/highlight.pack.js [32m200 [0m4.446 ms - 8829[0m
+[0mGET / [36m304 [0m3.966 ms - -[0m
+[0mGET /css/immutable.css [36m304 [0m2.638 ms - -[0m
+[0mGET /css/github.css [36m304 [0m2.914 ms - -[0m
+[0mGET /js/highlight.pack.js [36m304 [0m4.642 ms - -[0m
+[0mGET /favicon.ico [33m404 [0m1.796 ms - 368[0m
+[0mGET /requests [32m200 [0m22.521 ms - 109603[0m
+[0mGET /css/immutable.css [36m304 [0m1.028 ms - -[0m
+[0mGET /css/github.css [36m304 [0m2.126 ms - -[0m
+[0mGET /js/highlight.pack.js [36m304 [0m3.851 ms - -[0m
+[0mGET /request/C25764DA66A9CFE80361C8351719F064 [32m200 [0m23.675 ms - 11146[0m
+[0mGET /css/immutable.css [36m304 [0m2.320 ms - -[0m
+[0mGET /css/github.css [36m304 [0m5.506 ms - -[0m
+[0mGET /js/highlight.pack.js [36m304 [0m3.471 ms - -[0m
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m

@@ -22,11 +22,11 @@
         <td class="center">{{method}}</td>
         <td class="center {{statusColor}}">{{statusCode}}</td>
         <td class="center">{{contentLength}}</td>
-        <td><a href="/requests?url={{url}}">{{url}}</a></td>
+        <td><a href="/requests?url={{url}}" title="{{url}}">{{urlShort}}</a></td>
         <td class="center"><a href="/data/{{instanceId}}">{{instanceIdShort}}</a></td>
         <td class="center"><a href="/request/{{requestId}}">{{requestIdShort}}</a></td>
         <td class="center"><a href="/requests?sessionId={{sessionId}}">{{sessionIdShort}}</a></td>
-        <td class="center">{{accountIdShort}}</td>
+        <td class="center"><a href="/requests?accountId={{accountId}}">{{accountIdShort}}</a></td>
         <td class="center"><a href="/requests?ipAddress={{ipAddress}}">{{ipAddress}}</a></td>
         <td class="center">
             <table>

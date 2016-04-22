@@ -1,0 +1,57 @@
+[33m[nodemon] 1.9.1[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching: *.*[39m
+[32m[nodemon] starting `node bin/www`[39m
+[0mGET /cart [32m200 [0m89.058 ms - 5055[0m
+[0mGET /productOption [32m200 [0m17.077 ms - 2[0m
+[0mGET /favorite [33m403 [0m33.450 ms - 25[0m
+[0mGET /product [32m200 [0m114.999 ms - 151271[0m
+[0mPOST /cart/420D0DE7B3640156AA6CD19E99E2F046/cartProduct [32m200 [0m75.906 ms - 8922[0m
+[0mPOST /cart/420D0DE7B3640156AA6CD19E99E2F046/cartProduct [32m200 [0m40.964 ms - 11367[0m
+[0mPOST /cart/420D0DE7B3640156AA6CD19E99E2F046/cartProduct [32m200 [0m40.628 ms - 14788[0m
+[0mPUT /cart/420D0DE7B3640156AA6CD19E99E2F046/cartProduct/E402C3770A3096D56AA3A2C07E36196A [32m200 [0m35.826 ms - 14842[0m
+[0mPUT /cart/420D0DE7B3640156AA6CD19E99E2F046/cartProduct/B7D12D693C7AA13E48E07441D68C06A6 [32m200 [0m27.136 ms - 14740[0m
+[0mPUT /cart/420D0DE7B3640156AA6CD19E99E2F046/cartProduct/ECE0F5E3A87E151E7FEBB09A066AEA9A [32m200 [0m20.117 ms - 14640[0m
+[0mPUT /cart/420D0DE7B3640156AA6CD19E99E2F046/cartProduct/CCD0B6B73CD19DC34404A9B4BCFB3DD6 [32m200 [0m21.998 ms - 14540[0m
+[0mPUT /cart/420D0DE7B3640156AA6CD19E99E2F046/cartProduct/AD2B958F13DB7DBC8593CCF9312B74CE [32m200 [0m22.417 ms - 14432[0m
+[0mGET /product [36m304 [0m72.610 ms - -[0m
+TypeError: Cannot read property 'products' of undefined
+    at findActiveProduct (/server/immutable-commerce/extensions/freshrealm/set-active-product.js:30:42)
+    at setActiveProductForCartProduct (/server/immutable-commerce/extensions/freshrealm/set-active-product.js:77:25)
+    at Object.setActiveProduct [as functionObj] (/server/immutable-commerce/extensions/freshrealm/set-active-product.js:22:9)
+    at functionObj (/server/immutable-commerce/lib/immutable/module.js:227:49)
+    at /server/immutable-commerce/lib/immutable/module.js:473:40
+    at process._tickCallback (node.js:364:9)
+[0mGET /cart [31m500 [0m26.169 ms - 56[0m
+[0mGET /product [32m200 [0m71.688 ms - 154303[0m
+TypeError: Cannot read property 'products' of undefined
+    at findActiveProduct (/server/immutable-commerce/extensions/freshrealm/set-active-product.js:30:42)
+    at setActiveProductForCartProduct (/server/immutable-commerce/extensions/freshrealm/set-active-product.js:77:25)
+    at Object.setActiveProduct [as functionObj] (/server/immutable-commerce/extensions/freshrealm/set-active-product.js:22:9)
+    at functionObj (/server/immutable-commerce/lib/immutable/module.js:227:49)
+    at /server/immutable-commerce/lib/immutable/module.js:473:40
+    at process._tickCallback (node.js:364:9)
+[0mGET /cart [31m500 [0m40.637 ms - 56[0m
+[0mGET /favorite [32m200 [0m5.630 ms - 2[0m
+[0mGET /productOption [36m304 [0m6.534 ms - -[0m
+TypeError: Cannot read property 'products' of undefined
+    at findActiveProduct (/server/immutable-commerce/extensions/freshrealm/set-active-product.js:30:42)
+    at setActiveProductForCartProduct (/server/immutable-commerce/extensions/freshrealm/set-active-product.js:77:25)
+    at Object.setActiveProduct [as functionObj] (/server/immutable-commerce/extensions/freshrealm/set-active-product.js:22:9)
+    at functionObj (/server/immutable-commerce/lib/immutable/module.js:227:49)
+    at /server/immutable-commerce/lib/immutable/module.js:473:40
+    at process._tickCallback (node.js:364:9)
+[0mGET /cart [31m500 [0m14.619 ms - 56[0m
+[0mGET /product [36m304 [0m46.559 ms - -[0m
+[0mPOST /cart [32m200 [0m391.493 ms - 1136[0m
+[0mPOST /cart [32m200 [0m221.998 ms - 1136[0m
+[0mGET /productOption [36m304 [0m10.905 ms - -[0m
+[0mGET /cart [32m200 [0m9.858 ms - 1136[0m
+[0mGET /favorite [36m304 [0m3.104 ms - -[0m
+[0mGET /productOption [36m304 [0m14.690 ms - -[0m
+[0mGET /product [36m304 [0m69.993 ms - -[0m
+[0mPOST /cart/DB51992C916E5B59F305774A090A59AD/cartProduct [32m200 [0m43.363 ms - 5451[0m
+[0mPOST /cart/DB51992C916E5B59F305774A090A59AD/cartProduct [32m200 [0m46.326 ms - 9119[0m
+[0mPOST /cart/DB51992C916E5B59F305774A090A59AD/cartProduct [32m200 [0m46.353 ms - 11610[0m
+[0mPOST /cart/DB51992C916E5B59F305774A090A59AD/cartProduct [32m200 [0m51.636 ms - 15079[0m
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m

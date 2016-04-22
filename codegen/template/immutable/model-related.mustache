@@ -1,0 +1,35 @@
+
+/**
+ * @function {{name}}{{ucModelName}}
+ *
+ * @param {string} {{idColumnName}}
+ * @param {string} {{tableName}}CreateTime
+ *
+ * @returns {Promise}
+ */
+function {{name}}{{ucModelName}} (args) {
+    // build data
+    var {{tableName}}Data = {
+        {{idColumnName}}: args.{{idColumnName}},
+        {{tableName}}CreateTime: args.{{tableName}}CreateTime || args.session.requestTimestamp,
+        sessionId: args.session.sessionId,
+    }
+    // set id
+    setId({{name}}{{ucModelName}}Data, '{{tableName}}Id')
+    // insert record
+    return db('{{specificationName}}').query(`
+        INSERT INTO \`{{tableName}}\` VALUES(
+            UNHEX(:{{tableName}}Id),
+            UNHEX(:{{idColumnName}}),
+            UNHEX(:sessionId),
+            :{{tableName}}CreateTime
+        )`,
+        {{tableName}}Data,
+        undefined,
+        args.session
+    )
+    // success
+    .then(function (res) {
+        return true
+    })
+}

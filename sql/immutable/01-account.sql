@@ -1,7 +1,7 @@
 CREATE TABLE `account` (
   `accountId` binary(16) NOT NULL,
-  `drupalUserId` int(10) unsigned NOT NULL,
+  `sessionId` binary(16) NOT NULL,
+  `frUid` varchar(63) DEFAULT NULL,
   `accountCreateTime` datetime(6) NOT NULL,
-  PRIMARY KEY (`accountId`),
-  UNIQUE KEY `drupalUserId` (`drupalUserId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+  PRIMARY KEY (`accountId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

@@ -5,6 +5,7 @@ var bodyParser = require('body-parser')
 var cookieParser = require('cookie-parser')
 var express = require('express')
 var favicon = require('serve-favicon')
+var http = require('http')
 var logger = require('morgan')
 var moment = require('moment')
 var mustacheExpress = require('mustache-express')
@@ -23,9 +24,9 @@ var search = require('./routes/search')
 var app = express()
 
 /* configure views */
-app.engine('mustache', mustacheExpress());
-app.set('view engine', 'mustache');
-app.set('views', './views');
+app.engine('mustache', mustacheExpress())
+app.set('view engine', 'mustache')
+app.set('views', './views')
 
 // log requests
 app.use(logger('dev'))
@@ -72,3 +73,62 @@ app.use(function(err, req, res, next) {
 })
 
 module.exports = app
+
+/* start server */
+
+// get port from environment or use default
+var port = normalizePort(process.env.PORT || '10001')
+app.set('port', port)
+
+// create HTTP server
+var server = http.createServer(app)
+server.on('error', onError)
+
+// listen on provided port, on all network interfaces.
+server.listen(port)
+
+/**
+ * @function normalizePort
+ */
+function normalizePort(val) {
+    var port = parseInt(val, 10)
+
+    if (isNaN(port)) {
+        // named pipe
+        return val
+    }
+
+    if (port >= 0) {
+        // port number
+        return port
+    }
+
+    return false
+}
+
+/**
+ * @function onError
+ */
+function onError(error) {
+    if (error.syscall !== 'listen') {
+        throw error
+    }
+
+    var bind = typeof port === 'string'
+        ? 'Pipe ' + port
+        : 'Port ' + port
+
+    // handle specific listen errors with friendly messages
+    switch (error.code) {
+        case 'EACCES':
+            console.error(bind + ' requires elevated privileges')
+            process.exit(1)
+            break
+        case 'EADDRINUSE':
+            console.error(bind + ' is already in use')
+            process.exit(1)
+            break
+        default:
+            throw error
+    }
+}

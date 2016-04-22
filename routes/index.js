@@ -7,7 +7,7 @@ var router = express.Router()
 /* routes */
 
 router.get('/', function(req, res, next) {
-    res.send(req.session.data)
+    res.send(req.session)
 });
 
 module.exports = router

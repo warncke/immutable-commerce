@@ -30,7 +30,7 @@ function getRequest (req) {
     var requestPromise = requestModel.getRequestById({
         requestId: req.params.requestId,
     })
-    var moduleCallPromise = moduleCallModel.getModuleCallsByRequestId({
+    var moduleCallResolve = moduleCallModel.getModuleCallsByRequestId({
         requestId: req.params.requestId,
     })
     // wait for all data to be loaded
@@ -38,7 +38,7 @@ function getRequest (req) {
         dbQueryPromise,
         httpRequestPromise,
         requestPromise,
-        moduleCallPromise,
+        moduleCallResolve,
     // build request data
     ]).then(function (res) {
         var dbQueries = res[0]

@@ -10,7 +10,7 @@ var http = require('../lib/http')
 /* CLI setup */
 
 var cli = commandLineArgs([
-    { name: "baseUrl", type: String, defaultValue: "http://marketplace.dev:9077" },
+    { name: "baseUrl", type: String, defaultValue: "http://marketplacenc.dev:9077" },
     { name: "help", type: Boolean, defaultValue: false },
 ])
 
@@ -98,6 +98,6 @@ http.get(
 
 function printHelp () {
     console.log("\nUsage: node test/http-test.js [options]\n")
-    console.log("\t--baseUrl\t[http://marketplace.dev:9077]")
+    console.log("\t--baseUrl\t[http://marketplacenc.dev:9077]")
     console.log("\n")
 }

@@ -24,12 +24,13 @@ function createFavorite (args) {
     var favorite = {
         accountId: args.accountId,
         favoriteCreateTime: args.session.requestTimestamp,
+        originalProductId: args.originalProductId,
         productId: args.productId,
         toggle: 1,
     }
     // insert favorite
     return db('immutable').query(
-        'INSERT INTO favorite VALUES(UNHEX(:accountId), UNHEX(:productId), :toggle, :favoriteCreateTime)',
+        'INSERT INTO favorite VALUES(UNHEX(:accountId), UNHEX(:productId), UNHEX(:originalProductId), :toggle, :favoriteCreateTime)',
         favorite,
         undefined,
         args.session
@@ -50,7 +51,7 @@ function createFavorite (args) {
 function getFavorites (args) {
     // select favorites by account id
     return db('immutable').query(
-        'SELECT HEX(productId) AS productId, SUM(toggle) % 2 AS toggle FROM favorite WHERE accountId = UNHEX(:accountId) AND favoriteCreateTime <= :requestTimestamp GROUP BY accountId, productId',
+        'SELECT HEX(originalProductId) AS productId, SUM(toggle) % 2 AS toggle FROM favorite WHERE accountId = UNHEX(:accountId) AND favoriteCreateTime <= :requestTimestamp GROUP BY accountId, productId',
         {
             accountId: args.accountId,
             requestTimestamp: args.session.requestTimestamp

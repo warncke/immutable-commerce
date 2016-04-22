@@ -21,7 +21,7 @@ var requestDateTimeKeys = [
 var requestIdKeys = [
     'argsId',
     'moduleCallId',
-    'promiseDataId',
+    'moduleCallResolveDataId',
     'stackId',
 ]
 
@@ -37,16 +37,16 @@ function getModuleCallsByRequestId (args) {
         knex.raw('HEX(argsId) AS argsId'),
         knex.raw('HEX(requestId) AS requestId'),
         knex.raw('HEX(stackId) AS stackId'),
-        knex.raw('HEX(promiseDataId) AS promiseDataId'),
-        knex.raw('TIMESTAMPDIFF(MICROSECOND, moduleCallCreateTime, moduleCallPromiseCreateTime) AS runTimeUs'),
+        knex.raw('HEX(moduleCallResolveDataId) AS moduleCallResolveDataId'),
+        knex.raw('TIMESTAMPDIFF(MICROSECOND, moduleCallCreateTime, moduleCallResolveCreateTime) AS runTimeUs'),
         'functionName',
         'moduleName',
         'resolved',
         'moduleCallCreateTime',
-        'moduleCallPromiseCreateTime'
+        'moduleCallResolveCreateTime'
     ])
     .from('moduleCall')
-    .leftJoin('moduleCallPromise', 'moduleCall.moduleCallId', 'moduleCallPromise.moduleCallId')
+    .leftJoin('moduleCallResolve', 'moduleCall.moduleCallId', 'moduleCallResolve.moduleCallId')
     .whereRaw('moduleCall.requestId = UNHEX(?)', [args.requestId])
     .orderBy('moduleCallCreateTime')
     // query calls for request

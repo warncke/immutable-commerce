@@ -1,0 +1,8 @@
+CREATE TABLE `{{name}}` (
+{{#columns}}
+  {{{sql}}}
+{{/columns}}
+{{#indexes}}
+  {{{.}}}
+{{/indexes}}
+) ENGINE={{engine}} DEFAULT CHARSET=utf8;

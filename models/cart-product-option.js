@@ -1,9 +1,6 @@
 'use strict'
 
-/* npm libraries */
-
 /* application libraries */
-
 var buildProductOptions = require('../lib/build-product-options')
 var db = require('../lib/database.js')
 var immutable = require('../lib/immutable')
@@ -17,7 +14,8 @@ module.exports = immutable.model('CartProductOption', {
 /**
  * @function createCartProductOption
  *
- * @param {string} productId - hex id of original cart
+ * @param {string} cartId - hex id of original cart
+ * @param {string} cartProductId - hex id of original cart product
  * @param {string} optionName
  * @param {string} optionValue
  * @param {object} session - request session
@@ -27,13 +25,12 @@ module.exports = immutable.model('CartProductOption', {
 function createCartProductOption (args) {
     // insert product publish
     return db('immutable').query(
-        'INSERT INTO `cartProductOption` VALUES(UNHEX(:cartId), UNHEX(:cartProductId), UNHEX(:productId), :optionName, :optionValue, :cartProductOptionCreateTime)',
+        'INSERT INTO `cartProductOption` VALUES(UNHEX(:cartId), UNHEX(:cartProductId), :optionName, :optionValue, :cartProductOptionCreateTime)',
         {
             cartId: args.cartId,
             cartProductId: args.cartProductId,
             optionName: args.optionName,
             optionValue: args.optionValue,
-            productId: args.productId,
             cartProductOptionCreateTime: args.session.requestTimestamp,
         },
         undefined,
@@ -60,7 +57,7 @@ function getCartProductOptions (args) {
             cartProductOptionCreateTime: args.session.requestTimestamp,
         },
         undefined,
-        args.sessionId
+        args.session
     ).then(function (res) {
         return buildProductOptions(res)
     })

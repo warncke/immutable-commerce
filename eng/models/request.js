@@ -145,6 +145,9 @@ function getRequests (args) {
             var record = res[i]
             // create a 'Short' version of each key 8 chars long
             truncateMulti(record, requestIdKeys, 8)
+            // create a 'Short' version or url
+            truncateMulti(record, ['url'], 80)
+            console.log(record)
             // split date-time column into date and time
             splitDateMulti(record, requestDateTimeKeys)
             // set a color for status code

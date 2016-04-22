@@ -44,7 +44,8 @@ function createFavorite (args) {
         // toggle favorite
         return favoriteModel.createFavorite({
             accountId: session.accountId,
-            productId: productId,
+            productId: product.productId,
+            originalProductId: product.originalProductId,
             session: session,
         })
     })

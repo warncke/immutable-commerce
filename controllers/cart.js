@@ -4,15 +4,18 @@
 
 /* application libraries */
 var accessDenied = require('../lib/access-denied')
+var addressModel = require('../models/address')
 var badRequest = require('../lib/bad-request')
 var cartModel = require('../models/cart')
 var cartProductModel = require('../models/cart-product')
 var cartProductOptionModel = require('../models/cart-product-option')
 var conflict = require('../lib/conflict')
+var discountController = require('../controllers/discount')
 var immutable = require('../lib/immutable')
 var isDuplicate = require('../lib/is-duplicate')
 var notFound = require('../lib/not-found')
 var orderModel = require('../models/order')
+var paymentMethodModel = require('../models/payment-method')
 var productController = require('../controllers/product')
 var productModel = require('../models/product')
 
@@ -29,7 +32,7 @@ var cartController = module.exports = immutable.controller('Cart', {
  * @function createCart
  *
  * @param {object} req - express request
- * 
+ *
  * @returns {Promise}
  */
 function createCart (req) {
@@ -54,15 +57,15 @@ function createCart (req) {
  * @function createOrder
  *
  * @param {object} req - express request
- * 
+ *
  * @returns {Promise}
  */
 function createOrder (req) {
     var session = req.session
     // get input
-    var accountId = session.data.accountId
+    var accountId = session.accountId
     var cartId = req.params.cartId
-    var sessionId = session.data.sessionId
+    var sessionId = session.sessionId
     // variables to populate in promises
     var cart
     var originalOrderId
@@ -142,24 +145,20 @@ function createOrder (req) {
  * @function getCartById
  *
  * @param {object} req - express request
- * 
+ *
  * @returns {Promise}
  */
 function getCartById (req) {
     var session = req.session
     // get input
-    var cartId = req.params.cartId
+    var cartId = req.params.cartId || req.body.cartId
     // variables to populate in promises
     var cart
     var cartProductOptions
     var order
+    var sessionDiscount
     // load cart
     var cartPromise = cartModel.getCartById({
-        cartId: cartId,
-        session: session,
-    })
-    // load product options
-    var cartProductOptionsPromise = cartProductOptionModel.getCartProductOptions({
         cartId: cartId,
         session: session,
     })
@@ -168,42 +167,90 @@ function getCartById (req) {
         cartId: cartId,
         session: session,
     })
+    // load active discount for session if any
+    var sessionDiscountPromise = discountController.getSessionDiscount(req)
+        // catch errors on session discount
+        .catch(function (err) {
+            // ignore 404 errors
+            if (err.status === 404) {
+                return
+            }
+            // throw other errors
+            return Promise.reject(err)
+        })
     // wait for all data to load
     return Promise.all([
         cartPromise,
-        cartProductOptionsPromise,
         orderPromise,
+        sessionDiscountPromise,
     ])
     // build cart
     .then(function (res) {
         cart = res[0]
-        cartProductOptions = res[1]
-        order = res[2]
+        order = res[1]
+        sessionDiscount = res[2]
         // cart id was not found
         if (!cart) {
             return notFound()
         }
         // cart does not belong to current session
-        if (cart.sessionId !== session.originalSessionId) {
+        if (cart.sessionId !== session.sessionId) {
             return accessDenied()
         }
         // add associated order to cart
         cart.order = order
-        // add associated product options to cart
-        cart.productOptions = cartProductOptions
+        // add associated discount to cart
+        cart.sessionDiscount = sessionDiscount
     })
-    // load cart products
+    // load cart products, cart product options
     .then(function () {
         // load cart products
-        return cartProductModel.getCartProductsByCartId({
+        var cartProductPromise = cartProductModel.getCartProductsByCartId({
             cartId: cart.originalCartId,
             session: session,
         })
+        // load product options
+        var cartProductOptionsPromise = cartProductOptionModel.getCartProductOptions({
+            cartId: cart.originalCartId,
+            session: session,
+        })
+        // load payment method
+        var paymentMethodPromise = cart.cartData.paymentMethodId
+            ? paymentMethodModel.getPaymentMethodById({
+                paymentMethodId: cart.cartData.paymentMethodId,
+                session: session,
+            })
+            : Promise.resolve()
+        // load billing address
+        var billingAddressPromise = cart.cartData.billingAddressId
+            ? addressModel.getAddressById({
+                addressId: cart.cartData.billingAddressId,
+                session: session,
+            })
+            : Promise.resolve()
+        // load shipping address
+        var shippingAddressPromise = cart.cartData.shippingAddressId
+            ? addressModel.getAddressById({
+                addressId: cart.cartData.shippingAddressId,
+                session: session,
+            })
+            : Promise.resolve()
+        // wait for all to load
+        return Promise.all([
+            cartProductPromise,
+            cartProductOptionsPromise,
+            paymentMethodPromise,
+            billingAddressPromise,
+            shippingAddressPromise,
+        ])
     })
-    // add products to cart
-    .then(function (products) {
-        // add products to cart
-        cart.products = products ? products : {}
+    // add related data to cart
+    .then(function (res) {
+        cart.products = res[0]
+        cart.productOptions = res[1]
+        cart.paymentMethod = res[2]
+        cart.billingAddress = res[3]
+        cart.shippingAddress = res[4]
         // load product data and merge into products
         return getProductDataForProducts(req, cart.products)
     })
@@ -217,7 +264,7 @@ function getCartById (req) {
  * @function getCartBySessionId
  *
  * @param {object} req - express request
- * 
+ *
  * @returns {Promise}
  */
 function getCartBySessionId (req) {
@@ -257,7 +304,7 @@ function getCartBySessionId (req) {
  * @function updateCart
  *
  * @param {object} req - express request
- * 
+ *
  * @returns {Promise}
  */
 function updateCart (req) {
@@ -265,8 +312,7 @@ function updateCart (req) {
     // get input
     var cartData = req.body.cartData
     var cartId = req.params.cartId
-    var originalSessionId = session.data.originalSessionId
-    var sessionId = session.data.sessionId
+    var sessionId = session.sessionId
     // capture cart
     var cart
     // load cart
@@ -283,7 +329,7 @@ function updateCart (req) {
             return notFound()
         }
         // cart does not belong to current session
-        if (cart.sessionId !== sessionId && cart.sessionId !== originalSessionId) {
+        if (cart.sessionId !== sessionId && cart.sessionId !== sessionId) {
             return accessDenied()
         }
         // create cart
@@ -354,6 +400,7 @@ function getProductDataForProducts (req, cartProducts) {
             for (var j=0; j < cartProductIds.length; j++) {
                 var cartProductId = cartProductIds[j]
                 var cartProduct = cartProducts[cartProductId]
+                cartProduct.originalProductId = product.originalProductId
                 cartProduct.productData = product.productData
             }
         }

@@ -23,7 +23,7 @@ var session = require('../lib/system-session')
 var cli = commandLineArgs([
     { name: "avgDelay", type: Number, defaultValue: 10000 },
     { name: "avgMod", type: Number, defaultValue: 15 },
-    { name: "baseUrl", type: String, defaultValue: "http://marketplace.dev:9077" },
+    { name: "baseUrl", type: String, defaultValue: "http://marketplacenc.dev:9077" },
     { name: "concurrent", alias: "c", type: Number, defaultValue: 500 },
     { name: "help", type: Boolean, defaultValue: false },
     { name: "number", alias: "n", type: Number, defaultValue: 1000 },
@@ -263,7 +263,7 @@ function modifyCartProduct (cartId, cookieJar, delay, productId, quantity, cartP
                 resolve(res)
             })
         }, delay)
-    })    
+    })
 }
 
 function runTest () {
@@ -423,7 +423,7 @@ function printHelp () {
     console.log("\nUsage: node test/procedural-test.js [options]\n")
     console.log("\t--avgDelay\t[10000]\t\taverage time between requests (ms)")
     console.log("\t--avgMod\t[15]\t\taverage product modifications (add+remove)")
-    console.log("\t--baseUrl\t[http://marketplace.dev:9077]")
+    console.log("\t--baseUrl\t[http://marketplacenc.dev:9077]")
     console.log("\t--concurrent\t[1000]\t\tnumber of tests to run concurrently")
     console.log("\t--number\t[1000]\t\ttotal number of tests to run")
     console.log("\t--numProducts\t[1000]\t\tminimum number of products to create")
